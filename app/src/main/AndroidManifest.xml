@@ -28,12 +28,15 @@
                 android:value="0" />
         </service>
         <service
-            android:name=".tile.MainTileService"
+            android:name="com.sameerasw.essentials.tile.MainTileService"
             android:exported="true"
             android:label="@string/tile_label"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.wearable.tiles.BIND_TILE_PROVIDER" />
             </intent-filter>
 
             <meta-data

@@ -2,6 +2,7 @@
 agp = "9.0.0"
 playServicesWearable = "18.0.0"
 kotlin = "2.0.21"
+gson = "2.10.1"
 composeBom = "2024.09.00"
 composeMaterial = "1.2.1"
 composeFoundation = "1.2.1"
@@ -18,6 +19,7 @@ watchfaceComplicationsDataSourceKtx = "1.2.1"
 
 [libraries]
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 ui = { group = "androidx.compose.ui", name = "ui" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }

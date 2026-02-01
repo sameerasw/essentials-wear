@@ -1,4 +1,4 @@
-package com.sameerasw.schedule.complication
+package com.sameerasw.essentials.complication
 
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType

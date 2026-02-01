@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.sameerasw.schedule"
+    namespace = "com.sameerasw.essentials"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.sameerasw.schedule"
+        applicationId = "com.sameerasw.essentials"
         minSdk = 35
         targetSdk = 36
         versionCode = 1
@@ -39,6 +39,7 @@ android {
 
 dependencies {
     implementation(libs.play.services.wearable)
+    implementation(libs.gson)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)

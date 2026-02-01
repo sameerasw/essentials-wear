@@ -1,10 +1,10 @@
-package com.sameerasw.schedule.presentation.theme
+package com.sameerasw.essentials.presentation.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material.MaterialTheme
 
 @Composable
-fun ScheduleTheme(
+fun EssentialsTheme(
     content: @Composable () -> Unit
 ) {
     /**

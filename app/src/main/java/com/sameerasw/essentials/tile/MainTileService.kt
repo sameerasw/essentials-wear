@@ -9,8 +9,11 @@ import androidx.wear.protolayout.material.Colors
 import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
 import androidx.wear.protolayout.material.layouts.PrimaryLayout
+import androidx.wear.protolayout.material.layouts.EdgeContentLayout
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.DimensionBuilders
+import androidx.wear.protolayout.material.CircularProgressIndicator
+import androidx.wear.protolayout.material.ProgressIndicatorColors
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.tooling.preview.Preview
@@ -100,6 +103,22 @@ private fun tileLayout(
         .setWidth(DimensionBuilders.expand())
         .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
     
+    val calendar = java.util.Calendar.getInstance()
+    val totalMinutesInDay = 24 * 60
+    val currentMinutes = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calendar.get(java.util.Calendar.MINUTE)
+    val progress = currentMinutes.toFloat() / totalMinutesInDay
+    val progressDegrees = progress * 360f
+
+    val indicatorBuilder = CircularProgressIndicator.Builder()
+    indicatorBuilder.setProgress(progress)
+    indicatorBuilder.setCircularProgressIndicatorColors(
+        ProgressIndicatorColors(
+            argb(lightAccent ?: 0xFFEEEEEE.toInt()),
+            argb(0x33FFFFFF.toInt())
+        )
+    )
+    val progressIndicator = indicatorBuilder.build()
+    
     if (events.isEmpty()) {
         columnBuilder.addContent(
             Text.Builder(context, context.getString(R.string.no_events))
@@ -167,7 +186,9 @@ private fun tileLayout(
         .setId("open_app")
         .build()
 
-    return PrimaryLayout.Builder(requestParams.deviceConfiguration)
+    val mainContent = columnBuilder.build()
+
+    val edgeContentLayout = EdgeContentLayout.Builder(requestParams.deviceConfiguration)
         .setResponsiveContentInsetEnabled(true)
         .setPrimaryLabelTextContent(
             Text.Builder(context, context.getString(R.string.upcoming_header))
@@ -175,10 +196,17 @@ private fun tileLayout(
                 .setTypography(Typography.TYPOGRAPHY_CAPTION1)
                 .build()
         )
-        .setContent(columnBuilder.build())
-        .setPrimaryChipContent(
-            CompactChip.Builder(context, context.getString(R.string.open_app), openAppClickable, requestParams.deviceConfiguration)
-                .setChipColors(androidx.wear.protolayout.material.ChipColors.primaryChipColors(Colors.DEFAULT))
+        .setContent(mainContent)
+        .setEdgeContent(progressIndicator)
+        .build()
+
+    return LayoutElementBuilders.Box.Builder()
+        .setWidth(DimensionBuilders.expand())
+        .setHeight(DimensionBuilders.expand())
+        .addContent(edgeContentLayout)
+        .setModifiers(
+            ModifiersBuilders.Modifiers.Builder()
+                .setClickable(openAppClickable)
                 .build()
         )
         .build()

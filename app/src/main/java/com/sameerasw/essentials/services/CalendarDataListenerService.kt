@@ -24,19 +24,36 @@ class CalendarDataListenerService : WearableListenerService() {
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
                 val eventList = dataMap.getDataMapArrayList("events")
                 if (eventList != null) {
-                    val themeColor = dataMap.getInt("theme_color", -1)
-                    saveData(eventList.map { it.toBundle() }, if (themeColor != -1) themeColor else null)
-                    Log.d(TAG, "Saved ${eventList.size} events and themeColor=$themeColor")
+                    val primaryColor = dataMap.getInt("theme_primary_color", -1)
+                    val secondaryColor = dataMap.getInt("theme_secondary_color", -1)
+                    val tertiaryColor = dataMap.getInt("theme_tertiary_color", -1)
+                    
+                    saveData(
+                        eventList.map { it.toBundle() },
+                        if (primaryColor != -1) primaryColor else null,
+                        if (secondaryColor != -1) secondaryColor else null,
+                        if (tertiaryColor != -1) tertiaryColor else null
+                    )
+                    Log.d(TAG, "Saved ${eventList.size} events and colors: P=$primaryColor, S=$secondaryColor, T=$tertiaryColor")
                     
                     // Trigger Tile Update
                     TileService.getUpdater(this)
                         .requestUpdate(MainTileService::class.java)
+
+                    // Trigger Complication Update
+                    val componentName = android.content.ComponentName(
+                        this,
+                        "com.sameerasw.essentials.complication.MainComplicationService"
+                    )
+                    androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
+                        .create(this, componentName)
+                        .requestUpdateAll()
                 }
             }
         }
     }
 
-    private fun saveData(events: List<android.os.Bundle>, themeColor: Int?) {
+    private fun saveData(events: List<android.os.Bundle>, primaryColor: Int?, secondaryColor: Int?, tertiaryColor: Int?) {
         val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
         val json = Gson().toJson(events.map { bundle ->
             mapOf(
@@ -50,7 +67,9 @@ class CalendarDataListenerService : WearableListenerService() {
         })
         val editor = prefs.edit()
         editor.putString("synced_calendar_events", json)
-        themeColor?.let { editor.putInt("theme_primary_color", it) }
+        primaryColor?.let { editor.putInt("theme_primary_color", it) }
+        secondaryColor?.let { editor.putInt("theme_secondary_color", it) }
+        tertiaryColor?.let { editor.putInt("theme_tertiary_color", it) }
         editor.apply()
     }
 

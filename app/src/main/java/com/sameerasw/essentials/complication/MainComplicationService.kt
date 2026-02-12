@@ -1,5 +1,6 @@
 package com.sameerasw.essentials.complication
 
+import android.content.Context
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.PlainComplicationText
@@ -14,24 +15,42 @@ import java.util.Calendar
 class MainComplicationService : SuspendingComplicationDataSourceService() {
 
     override fun getPreviewData(type: ComplicationType): ComplicationData? {
-        if (type != ComplicationType.SHORT_TEXT) {
-            return null
+        return when (type) {
+            ComplicationType.SHORT_TEXT -> createComplicationData("#FFFFFFFF", "Theme Color")
+            ComplicationType.RANGED_VALUE -> createRangedComplicationData(0xFFFFFFFF.toLong(), "Theme Color")
+            else -> null
         }
-        return createComplicationData("Mon", "Monday")
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
-            Calendar.SUNDAY -> createComplicationData("Sun", "Sunday")
-            Calendar.MONDAY -> createComplicationData("Mon", "Monday")
-            Calendar.TUESDAY -> createComplicationData("Tue", "Tuesday")
-            Calendar.WEDNESDAY -> createComplicationData("Wed", "Wednesday")
-            Calendar.THURSDAY -> createComplicationData("Thu", "Thursday")
-            Calendar.FRIDAY -> createComplicationData("Fri!", "Friday!")
-            Calendar.SATURDAY -> createComplicationData("Sat", "Saturday")
-            else -> throw IllegalArgumentException("too many days")
+        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+        val primaryColor = prefs.getInt("theme_primary_color", -1)
+        val targetColor = if (primaryColor != -1) primaryColor.toLong() and 0xFFFFFFFFL else 0xFFFFFFFFL
+
+        return when (request.complicationType) {
+            ComplicationType.RANGED_VALUE -> createRangedComplicationData(targetColor, "Theme Color")
+            ComplicationType.SHORT_TEXT -> {
+                val hexColor = String.format("#%08X", targetColor)
+                createComplicationData(hexColor, "Theme Color")
+            }
+            else -> {
+                // Fallback for other types or if data is missing
+                when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+                    Calendar.SUNDAY -> createComplicationData("Sun", "Sunday")
+                    Calendar.MONDAY -> createComplicationData("Mon", "Monday")
+                    else -> createComplicationData("Today", "Today")
+                }
+            }
         }
     }
+
+    private fun createRangedComplicationData(colorValue: Long, contentDescription: String) =
+        androidx.wear.watchface.complications.data.RangedValueComplicationData.Builder(
+            value = colorValue.toFloat(),
+            min = 0f,
+            max = 4294967295f,
+            contentDescription = PlainComplicationText.Builder(contentDescription).build()
+        ).build()
 
     private fun createComplicationData(text: String, contentDescription: String) =
         ShortTextComplicationData.Builder(

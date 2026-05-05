@@ -64,6 +64,7 @@ class CalendarDataListenerService : WearableListenerService() {
                     val flashlightLevel = dataMap.getInt("flashlight_level", 1)
                     val flashlightMaxLevel = dataMap.getInt("flashlight_max_level", 1)
                     val flashlightIntensitySupported = dataMap.getBoolean("flashlight_intensity_supported", false)
+                    val ringerMode = dataMap.getInt("ringer_mode", 2)
 
                     saveDeviceInfo(
                         batteryLevel, 
@@ -71,9 +72,10 @@ class CalendarDataListenerService : WearableListenerService() {
                         flashlightOn, 
                         flashlightLevel, 
                         flashlightMaxLevel, 
-                        flashlightIntensitySupported
+                        flashlightIntensitySupported,
+                        ringerMode
                     )
-                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, Level=$flashlightLevel")
+                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, RingerMode=$ringerMode")
                 }
             }
         }
@@ -85,7 +87,8 @@ class CalendarDataListenerService : WearableListenerService() {
         flashlightOn: Boolean,
         flashlightLevel: Int,
         flashlightMaxLevel: Int,
-        flashlightIntensitySupported: Boolean
+        flashlightIntensitySupported: Boolean,
+        ringerMode: Int
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -95,6 +98,7 @@ class CalendarDataListenerService : WearableListenerService() {
             .putInt("phone_flashlight_level", flashlightLevel)
             .putInt("phone_flashlight_max_level", flashlightMaxLevel)
             .putBoolean("phone_flashlight_intensity_supported", flashlightIntensitySupported)
+            .putInt("phone_ringer_mode", ringerMode)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

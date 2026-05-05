@@ -63,6 +63,7 @@ fun YourAndroidScreen() {
     val flashlightLevelState = remember { mutableStateOf(prefs.getInt("phone_flashlight_level", 1)) }
     val flashlightMaxLevelState = remember { mutableStateOf(prefs.getInt("phone_flashlight_max_level", 1)) }
     val flashlightIntensitySupportedState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_intensity_supported", false)) }
+    val ringerModeState = remember { mutableStateOf(prefs.getInt("phone_ringer_mode", 2)) }
 
     // Local brightness for smooth crown adjustment
     var localFlashlightLevel by remember { mutableStateOf(flashlightLevelState.value.toFloat()) }
@@ -96,6 +97,7 @@ fun YourAndroidScreen() {
                     "phone_flashlight_level" -> flashlightLevelState.value = p.getInt(key, 1)
                     "phone_flashlight_max_level" -> flashlightMaxLevelState.value = p.getInt(key, 1)
                     "phone_flashlight_intensity_supported" -> flashlightIntensitySupportedState.value = p.getBoolean(key, false)
+                    "phone_ringer_mode" -> ringerModeState.value = p.getInt(key, 2)
                 }
             }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -293,15 +295,42 @@ fun YourAndroidScreen() {
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Placeholder Bubble 2
+                // Sound Mode Bubble
+                val ringerMode = ringerModeState.value
+                val isNormal = ringerMode == 2 // AudioManager.RINGER_MODE_NORMAL
+                
+                val soundModeColors = if (!isNormal) {
+                    bubbleColors // Filled for Vibrate/Silent
+                } else {
+                    ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White
+                    )
+                }
+
                 Button(
-                    onClick = { HapticUtil.performUIHaptic(view) },
-                    enabled = false,
-                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
-                    colors = bubbleColors
+                    onClick = {
+                        HapticUtil.performUIHaptic(view)
+                        sendMessage("/toggle_sound_mode")
+                    },
+                    modifier = Modifier
+                        .size(ButtonDefaults.LargeButtonSize)
+                        .then(
+                            if (isNormal) Modifier.border(
+                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                CircleShape
+                            ) else Modifier
+                        ),
+                    colors = soundModeColors,
+                    shape = CircleShape
                 ) {
+                    val soundIcon = when (ringerMode) {
+                        1 -> R.drawable.rounded_mobile_vibrate_24
+                        0 -> R.drawable.rounded_volume_off_24
+                        else -> R.drawable.rounded_volume_up_24
+                    }
                     Icon(
-                        painter = painterResource(id = R.drawable.rounded_shapes_24),
+                        painter = painterResource(id = soundIcon),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )

@@ -179,26 +179,16 @@ fun YourAndroidScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Battery Bubble
                 Button(
                     onClick = {
                         HapticUtil.performUIHaptic(view)
-                        val nodeClient = Wearable.getNodeClient(context)
-                        nodeClient.connectedNodes.addOnSuccessListener { nodes ->
-                            val messageClient = Wearable.getMessageClient(context)
-                            for (node in nodes) {
-                                messageClient.sendMessage(
-                                    node.id,
-                                    "/request_device_info_sync",
-                                    byteArrayOf()
-                                )
-                            }
-                        }
+                        sendMessage("/request_device_info_sync")
                     },
-                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
+                    modifier = Modifier.size(52.dp),
                     colors = bubbleColors
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -219,14 +209,12 @@ fun YourAndroidScreen() {
                         )
                         if (batteryLevel != -1) {
                             Text(
-                                text = "$batteryLevel%",
+                                text = "$batteryLevel",
                                 style = MaterialTheme.typography.caption3
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
 
                 // Flashlight Bubble
                 val flashlightOn = flashlightOnState.value
@@ -234,66 +222,59 @@ fun YourAndroidScreen() {
                 val maxLevel = flashlightMaxLevelState.value
                 val intensitySupported = flashlightIntensitySupportedState.value
                 
-                Box(
-                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize + 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val buttonColors = if (flashlightOn) {
-                        bubbleColors // Filled accent
-                    } else {
-                        ButtonDefaults.buttonColors(
-                            backgroundColor = Color.Transparent,
-                            contentColor = Color.White
-                        )
-                    }
+                val buttonColors = if (flashlightOn) {
+                    bubbleColors // Filled accent
+                } else {
+                    ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White
+                    )
+                }
 
-                    Button(
-                        onClick = {
-                            HapticUtil.performUIHaptic(view)
-                            sendMessage("/toggle_flashlight")
-                        },
-                        modifier = Modifier
-                            .size(ButtonDefaults.LargeButtonSize)
-                            .then(
-                                if (!flashlightOn) Modifier.border(
-                                    BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
-                                    CircleShape
-                                ) else Modifier
-                            ),
-                        colors = buttonColors,
-                        shape = CircleShape
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            // Inset black ring inside button
-                            if (flashlightOn && intensitySupported) {
-                                CircularProgressIndicator(
-                                    progress = flashlightLevel / maxOf(1f, maxLevel.toFloat()),
-                                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
-                                    strokeWidth = 3.dp,
-                                    indicatorColor = Color.Black.copy(alpha = 0.35f),
-                                    trackColor = Color.Transparent
+                Button(
+                    onClick = {
+                        HapticUtil.performUIHaptic(view)
+                        sendMessage("/toggle_flashlight")
+                    },
+                    modifier = Modifier
+                        .size(52.dp)
+                        .then(
+                            if (!flashlightOn) Modifier.border(
+                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                CircleShape
+                            ) else Modifier
+                        ),
+                    colors = buttonColors,
+                    shape = CircleShape
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        // Inset black ring inside button
+                        if (flashlightOn && intensitySupported) {
+                            CircularProgressIndicator(
+                                progress = flashlightLevel / maxOf(1f, maxLevel.toFloat()),
+                                modifier = Modifier.size(52.dp),
+                                strokeWidth = 3.dp,
+                                indicatorColor = Color.Black.copy(alpha = 0.35f),
+                                trackColor = Color.Transparent
+                            )
+                        }
+                        
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                painter = painterResource(id = if (flashlightOn) R.drawable.round_flashlight_on_24 else R.drawable.rounded_flashlight_on_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            if (intensitySupported && flashlightOn) {
+                                val percentage = (flashlightLevel * 100 / maxOf(1, maxLevel.toInt())).toInt()
+                                Text(
+                                    text = "$percentage",
+                                    style = MaterialTheme.typography.caption3
                                 )
-                            }
-                            
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    painter = painterResource(id = if (flashlightOn) R.drawable.round_flashlight_on_24 else R.drawable.rounded_flashlight_on_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                if (intensitySupported && flashlightOn) {
-                                    val percentage = (flashlightLevel * 100 / maxOf(1, maxLevel.toInt())).toInt()
-                                    Text(
-                                        text = "$percentage",
-                                        style = MaterialTheme.typography.caption3
-                                    )
-                                }
                             }
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
 
                 // Sound Mode Bubble
                 val ringerMode = ringerModeState.value
@@ -314,7 +295,7 @@ fun YourAndroidScreen() {
                         sendMessage("/toggle_sound_mode")
                     },
                     modifier = Modifier
-                        .size(ButtonDefaults.LargeButtonSize)
+                        .size(52.dp)
                         .then(
                             if (isNormal) Modifier.border(
                                 BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),

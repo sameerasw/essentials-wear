@@ -60,18 +60,41 @@ class CalendarDataListenerService : WearableListenerService() {
                 val isCharging = dataMap.getBoolean("is_charging", false)
 
                 if (batteryLevel != -1) {
-                    saveDeviceInfo(batteryLevel, isCharging)
-                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging")
+                    val flashlightOn = dataMap.getBoolean("flashlight_on", false)
+                    val flashlightLevel = dataMap.getInt("flashlight_level", 1)
+                    val flashlightMaxLevel = dataMap.getInt("flashlight_max_level", 1)
+                    val flashlightIntensitySupported = dataMap.getBoolean("flashlight_intensity_supported", false)
+
+                    saveDeviceInfo(
+                        batteryLevel, 
+                        isCharging, 
+                        flashlightOn, 
+                        flashlightLevel, 
+                        flashlightMaxLevel, 
+                        flashlightIntensitySupported
+                    )
+                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, Level=$flashlightLevel")
                 }
             }
         }
     }
 
-    private fun saveDeviceInfo(batteryLevel: Int, isCharging: Boolean) {
+    private fun saveDeviceInfo(
+        batteryLevel: Int, 
+        isCharging: Boolean,
+        flashlightOn: Boolean,
+        flashlightLevel: Int,
+        flashlightMaxLevel: Int,
+        flashlightIntensitySupported: Boolean
+    ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
             .putInt("phone_battery_level", batteryLevel)
             .putBoolean("phone_is_charging", isCharging)
+            .putBoolean("phone_flashlight_on", flashlightOn)
+            .putInt("phone_flashlight_level", flashlightLevel)
+            .putInt("phone_flashlight_max_level", flashlightMaxLevel)
+            .putBoolean("phone_flashlight_intensity_supported", flashlightIntensitySupported)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

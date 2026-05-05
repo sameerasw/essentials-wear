@@ -13,16 +13,19 @@ import androidx.wear.compose.material.TimeText
 
 @Composable
 fun EssentialsScreen(
+    modifier: Modifier = Modifier,
     state: ScalingLazyListState = rememberScalingLazyListState(),
+    userScrollEnabled: Boolean = true,
     content: ScalingLazyListScope.() -> Unit
 ) {
     Scaffold(
         timeText = { TimeText() }
     ) {
         ScalingLazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             state = state,
             autoCentering = AutoCenteringParams(itemIndex = 0),
+            userScrollEnabled = userScrollEnabled,
             content = content
         )
     }

@@ -22,11 +22,24 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.Wearable
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.presentation.components.EssentialsScreen
@@ -39,24 +52,65 @@ fun YourAndroidScreen() {
     val context = LocalContext.current
     val view = LocalView.current
     val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
-
+    val focusRequester = remember { FocusRequester() }
+    
     // Reactive state for battery info
     val batteryLevelState = remember { mutableStateOf(prefs.getInt("phone_battery_level", -1)) }
     val isChargingState = remember { mutableStateOf(prefs.getBoolean("phone_is_charging", false)) }
+
+    // Reactive state for flashlight info
+    val flashlightOnState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_on", false)) }
+    val flashlightLevelState = remember { mutableStateOf(prefs.getInt("phone_flashlight_level", 1)) }
+    val flashlightMaxLevelState = remember { mutableStateOf(prefs.getInt("phone_flashlight_max_level", 1)) }
+    val flashlightIntensitySupportedState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_intensity_supported", false)) }
+
+    // Local brightness for smooth crown adjustment
+    var localFlashlightLevel by remember { mutableStateOf(flashlightLevelState.value.toFloat()) }
+    var lastUserAdjustmentTime by remember { mutableStateOf(0L) }
+
+    fun sendMessage(path: String, data: ByteArray = byteArrayOf()) {
+        val nodeClient = Wearable.getNodeClient(context)
+        nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+            val messageClient = Wearable.getMessageClient(context)
+            for (node in nodes) {
+                messageClient.sendMessage(node.id, path, data)
+            }
+        }
+    }
+
+    // Sync local level when state changes from phone
+    LaunchedEffect(flashlightLevelState.value) {
+        if (System.currentTimeMillis() - lastUserAdjustmentTime > 1500) {
+            localFlashlightLevel = flashlightLevelState.value.toFloat()
+        }
+    }
 
     // Observe preference changes
     DisposableEffect(Unit) {
         val listener =
             android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
-                if (key == "phone_battery_level") {
-                    batteryLevelState.value = p.getInt(key, -1)
-                } else if (key == "phone_is_charging") {
-                    isChargingState.value = p.getBoolean(key, false)
+                when (key) {
+                    "phone_battery_level" -> batteryLevelState.value = p.getInt(key, -1)
+                    "phone_is_charging" -> isChargingState.value = p.getBoolean(key, false)
+                    "phone_flashlight_on" -> flashlightOnState.value = p.getBoolean(key, false)
+                    "phone_flashlight_level" -> flashlightLevelState.value = p.getInt(key, 1)
+                    "phone_flashlight_max_level" -> flashlightMaxLevelState.value = p.getInt(key, 1)
+                    "phone_flashlight_intensity_supported" -> flashlightIntensitySupportedState.value = p.getBoolean(key, false)
                 }
             }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose {
             prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    // Sync brightness to phone
+    LaunchedEffect(localFlashlightLevel) {
+        if (flashlightOnState.value && flashlightIntensitySupportedState.value) {
+            val roundedLevel = localFlashlightLevel.toInt().coerceIn(1, flashlightMaxLevelState.value)
+            if (roundedLevel != flashlightLevelState.value) {
+                sendMessage("/set_flashlight_intensity", roundedLevel.toString().toByteArray())
+            }
         }
     }
 
@@ -84,7 +138,33 @@ fun YourAndroidScreen() {
         }
     }
 
-    EssentialsScreen {
+    // Request focus for rotary events
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    EssentialsScreen(
+        userScrollEnabled = !flashlightOnState.value,
+        modifier = Modifier
+            .onPreRotaryScrollEvent {
+                if (flashlightOnState.value && flashlightIntensitySupportedState.value) {
+                    val delta = it.verticalScrollPixels
+                    val maxLevel = flashlightMaxLevelState.value
+                    // Adjust sensitivity (delta / 10f)
+                    val newLevel = (localFlashlightLevel + delta / 10f).coerceIn(1f, maxLevel.toFloat())
+                    if (newLevel.toInt() != localFlashlightLevel.toInt()) {
+                        HapticUtil.performUIHaptic(view)
+                    }
+                    lastUserAdjustmentTime = System.currentTimeMillis()
+                    localFlashlightLevel = newLevel
+                    true
+                } else {
+                    false
+                }
+            }
+            .focusRequester(focusRequester)
+            .focusable()
+    ) {
         item {
             EssentialsTitle(
                 text = stringResource(R.string.your_android_title),
@@ -146,18 +226,69 @@ fun YourAndroidScreen() {
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Placeholder Bubble 1
-                Button(
-                    onClick = { HapticUtil.performUIHaptic(view) },
-                    enabled = false,
-                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
-                    colors = bubbleColors
+                // Flashlight Bubble
+                val flashlightOn = flashlightOnState.value
+                val flashlightLevel = localFlashlightLevel
+                val maxLevel = flashlightMaxLevelState.value
+                val intensitySupported = flashlightIntensitySupportedState.value
+                
+                Box(
+                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize + 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.rounded_shapes_24),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    val buttonColors = if (flashlightOn) {
+                        bubbleColors // Filled accent
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            backgroundColor = Color.Transparent,
+                            contentColor = Color.White
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            HapticUtil.performUIHaptic(view)
+                            sendMessage("/toggle_flashlight")
+                        },
+                        modifier = Modifier
+                            .size(ButtonDefaults.LargeButtonSize)
+                            .then(
+                                if (!flashlightOn) Modifier.border(
+                                    BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                    CircleShape
+                                ) else Modifier
+                            ),
+                        colors = buttonColors,
+                        shape = CircleShape
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            // Inset black ring inside button
+                            if (flashlightOn && intensitySupported) {
+                                CircularProgressIndicator(
+                                    progress = flashlightLevel / maxOf(1f, maxLevel.toFloat()),
+                                    modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
+                                    strokeWidth = 3.dp,
+                                    indicatorColor = Color.Black.copy(alpha = 0.35f),
+                                    trackColor = Color.Transparent
+                                )
+                            }
+                            
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    painter = painterResource(id = if (flashlightOn) R.drawable.round_flashlight_on_24 else R.drawable.rounded_flashlight_on_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                if (intensitySupported && flashlightOn) {
+                                    val percentage = (flashlightLevel * 100 / maxOf(1, maxLevel.toInt())).toInt()
+                                    Text(
+                                        text = "$percentage",
+                                        style = MaterialTheme.typography.caption3
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))

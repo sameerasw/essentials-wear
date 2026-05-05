@@ -173,8 +173,8 @@ fun YourAndroidScreen() {
             .focusRequester(focusRequester)
             .focusable()
     ) {
-
-
+        val isDeviceFound = !deviceNameState.value.isNullOrBlank()
+        
         item {
             Row(
                 modifier = Modifier
@@ -190,7 +190,8 @@ fun YourAndroidScreen() {
                         sendMessage("/request_device_info_sync")
                     },
                     modifier = Modifier.size(52.dp),
-                    colors = bubbleColors
+                    colors = bubbleColors,
+                    enabled = isDeviceFound
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val batteryIcon = if (isCharging) {
@@ -246,7 +247,8 @@ fun YourAndroidScreen() {
                             ) else Modifier
                         ),
                     colors = buttonColors,
-                    shape = CircleShape
+                    shape = CircleShape,
+                    enabled = isDeviceFound
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         // Inset black ring inside button
@@ -297,7 +299,8 @@ fun YourAndroidScreen() {
                             ) else Modifier
                         ),
                     colors = soundModeColors,
-                    shape = CircleShape
+                    shape = CircleShape,
+                    enabled = isDeviceFound
                 ) {
                     val soundIcon = when (ringerMode) {
                         1 -> R.drawable.rounded_mobile_vibrate_24

@@ -60,7 +60,8 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
             min = 0f,
             max = 4294967295f,
             contentDescription = PlainComplicationText.Builder(contentDescription).build()
-        ).build()
+        ).setText(PlainComplicationText.Builder("Color").build())
+        .build()
 
     private fun createComplicationData(text: String, contentDescription: String) =
         ShortTextComplicationData.Builder(

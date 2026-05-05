@@ -1,6 +1,7 @@
 package com.sameerasw.essentials.presentation.yourandroid
 
 import android.content.Context
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Column
@@ -109,9 +110,11 @@ fun YourAndroidScreen() {
         }
     }
 
-    // Sync brightness to phone
+    // Sync brightness to phone with debouncing
     LaunchedEffect(localFlashlightLevel) {
         if (flashlightOnState.value && flashlightIntensitySupportedState.value) {
+            // Debounce to avoid spamming the wearable message layer
+            delay(100)
             val roundedLevel = localFlashlightLevel.toInt().coerceIn(1, flashlightMaxLevelState.value)
             if (roundedLevel != flashlightLevelState.value) {
                 sendMessage("/set_flashlight_intensity", roundedLevel.toString().toByteArray())

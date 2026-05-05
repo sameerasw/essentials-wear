@@ -173,14 +173,7 @@ fun YourAndroidScreen() {
             .focusRequester(focusRequester)
             .focusable()
     ) {
-        item {
-            val title = if (!deviceNameState.value.isNullOrBlank()) deviceNameState.value!! else stringResource(R.string.your_android_title)
-            EssentialsTitle(
-                text = title,
-                color = lightAccentColor,
-                modifier = Modifier.basicMarquee()
-            )
-        }
+
 
         item {
             Row(

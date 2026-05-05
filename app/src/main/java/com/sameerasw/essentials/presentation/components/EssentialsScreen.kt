@@ -19,7 +19,7 @@ fun EssentialsScreen(
     content: ScalingLazyListScope.() -> Unit
 ) {
     Scaffold(
-        timeText = { TimeText() }
+        timeText = { EssentialsTimeText(scrollState = state) }
     ) {
         ScalingLazyColumn(
             modifier = modifier.fillMaxSize(),

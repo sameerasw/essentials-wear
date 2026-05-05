@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Schedule</string>
+    <string name="app_name">Essentials</string>
     <string name="hello_world">%1$s</string>
     <string name="tile_label">Schedule</string>
     <string name="complication_label">Schedule</string>
@@ -8,4 +8,8 @@
     <string name="upcoming_agenda">Schedule</string>
     <string name="upcoming_header">Upcoming</string>
     <string name="open_app">Open App</string>
+    <string name="feature_schedule">Schedule</string>
+    <string name="feature_your_android">Your Android</string>
+    <string name="feature_tools">Tools</string>
+    <string name="coming_soon">Coming Soon</string>
 </resources>

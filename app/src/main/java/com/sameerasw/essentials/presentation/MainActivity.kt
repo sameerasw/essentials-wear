@@ -1,8 +1,3 @@
-/* While this template provides a good starting point for using Wear Compose, you can always
- * take a look at https://github.com/android/wear-os-samples/tree/main/ComposeStarter to find the
- * most up to date changes to the libraries and their usages.
- */
-
 package com.sameerasw.essentials.presentation
 
 import android.os.Bundle
@@ -23,12 +18,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.presentation.theme.EssentialsTheme
@@ -40,7 +39,18 @@ import java.util.Locale
 
 private val timeFormatter = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
 
+object NavRoutes {
+    const val HOME = "home"
+    const val SCHEDULE = "schedule"
+}
+
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_NAVIGATE_TO = "navigate_to"
+        const val NAV_SCHEDULE = "schedule"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -48,112 +58,215 @@ class MainActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
+        val navigateTo = intent?.getStringExtra(EXTRA_NAVIGATE_TO)
+
         setContent {
-            WearApp()
+            WearApp(initialScreen = navigateTo)
         }
     }
 }
 
 @Composable
-fun WearApp() {
+fun WearApp(initialScreen: String? = null) {
+    val startDestination = if (initialScreen == MainActivity.NAV_SCHEDULE) NavRoutes.SCHEDULE else NavRoutes.HOME
+    val navController = rememberSwipeDismissableNavController()
+
+    EssentialsTheme {
+        SwipeDismissableNavHost(
+            navController = navController,
+            startDestination = startDestination
+        ) {
+            composable(NavRoutes.HOME) {
+                HomeScreen(
+                    onNavigate = { route -> navController.navigate(route) }
+                )
+            }
+            composable(NavRoutes.SCHEDULE) {
+                ScheduleScreen()
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeScreen(onNavigate: (String) -> Unit) {
+    val view = androidx.compose.ui.platform.LocalView.current
     val context = androidx.compose.ui.platform.LocalContext.current
-    val allEvents = androidx.compose.runtime.remember { 
+    val themeColor = androidx.compose.runtime.remember {
+        com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context)
+    }
+    val tonedThemeColor = themeColor?.let {
+        androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getTonedColor(it))
+    } ?: androidx.compose.ui.graphics.Color.DarkGray
+    val lightAccentColor = themeColor?.let {
+        androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getLightAccentColor(it))
+    } ?: androidx.compose.ui.graphics.Color(0xFFB39DDB.toInt())
+
+    val listState = rememberScalingLazyListState()
+
+    Scaffold(
+        timeText = { TimeText() }
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            autoCentering = AutoCenteringParams(itemIndex = 0)
+        ) {
+        item {
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.title3,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = lightAccentColor
+            )
+        }
+
+        // Schedule
+        item {
+            Chip(
+                onClick = {
+                    com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
+                    onNavigate(NavRoutes.SCHEDULE)
+                },
+                label = { Text(stringResource(R.string.feature_schedule)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ChipDefaults.secondaryChipColors(
+                    backgroundColor = tonedThemeColor,
+                    contentColor = androidx.compose.ui.graphics.Color.White
+                )
+            )
+        }
+
+        // Placeholder: Your Android
+        item {
+            Chip(
+                onClick = {
+                    com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
+                },
+                label = { Text(stringResource(R.string.feature_your_android)) },
+                secondaryLabel = { Text(stringResource(R.string.coming_soon)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ChipDefaults.secondaryChipColors(
+                    contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                    secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
+                ),
+                enabled = false
+            )
+        }
+
+        // Placeholder: Tools
+        item {
+            Chip(
+                onClick = {
+                    com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
+                },
+                label = { Text(stringResource(R.string.feature_tools)) },
+                secondaryLabel = { Text(stringResource(R.string.coming_soon)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ChipDefaults.secondaryChipColors(
+                    contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                    secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
+                ),
+                enabled = false
+            )
+        }
+        }
+    }
+}
+
+@Composable
+fun ScheduleScreen() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val allEvents = androidx.compose.runtime.remember {
         com.sameerasw.essentials.tile.MainTileService.getSyncedEvents(context)
     }
     val themeColor = androidx.compose.runtime.remember {
         com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context)
     }
-    
-    // Group events by date
+
     val groupedEvents = androidx.compose.runtime.remember(allEvents) {
         val dateFormatter = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
         allEvents.groupBy { dateFormatter.format(Date(it.begin)) }
     }
-    
+
     val listState = rememberScalingLazyListState()
 
-    EssentialsTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center
+    Scaffold(
+        timeText = { TimeText() }
+    ) {
+        if (groupedEvents.isEmpty()) {
+            Greeting("No upcoming events")
+        } else {
+            ScalingLazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
-            TimeText()
-            
-            if (groupedEvents.isEmpty()) {
-                Greeting("No upcoming events")
-            } else {
-                ScalingLazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = listState,
-                    autoCentering = AutoCenteringParams(itemIndex = 0)
-                ) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.upcoming_agenda),
-                            style = MaterialTheme.typography.title3,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
+            item {
+                Text(
+                    text = stringResource(R.string.upcoming_agenda),
+                    style = MaterialTheme.typography.title3,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
 
-                    groupedEvents.forEach { (date, eventsInDate) ->
-                        item {
-                            Text(
-                                text = date,
-                                style = MaterialTheme.typography.caption1,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp, bottom = 4.dp),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colors.onSurfaceVariant
-                            )
-                        }
-                        
-                        items(eventsInDate) { event ->
-                            val view = androidx.compose.ui.platform.LocalView.current
-                            val tonedThemeColor = themeColor?.let { androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getTonedColor(it)) } ?: androidx.compose.ui.graphics.Color.DarkGray
-                            
-                            Chip(
-                                onClick = { 
-                                    com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
-                                },
-                                label = { Text(event.title ?: "No Title") },
-                                secondaryLabel = { 
-                                    Text(
-                                        if (event.allDay) "All day" 
-                                        else com.sameerasw.essentials.utils.ThemeUtil.getTimeCountdown(event.begin)
-                                    ) 
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .then(
-                                        if (event.allDay) {
-                                            Modifier.border(
-                                                width = 1.dp,
-                                                color = tonedThemeColor,
-                                                shape = MaterialTheme.shapes.large
-                                            )
-                                        } else Modifier
-                                    ),
-                                colors = if (event.allDay) {
-                                    ChipDefaults.secondaryChipColors(
-                                        backgroundColor = androidx.compose.ui.graphics.Color.Transparent,
-                                        contentColor = androidx.compose.ui.graphics.Color.White,
-                                        secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
-                                    )
-                                } else {
-                                    ChipDefaults.secondaryChipColors(
-                                        backgroundColor = tonedThemeColor,
-                                        contentColor = androidx.compose.ui.graphics.Color.White,
-                                        secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
-                                    )
-                                }
-                            )
-                        }
-                    }
+            groupedEvents.forEach { (date, eventsInDate) ->
+                item {
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.caption1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 4.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colors.onSurfaceVariant
+                    )
                 }
+
+                items(eventsInDate) { event ->
+                    val view = androidx.compose.ui.platform.LocalView.current
+                    val tonedThemeColor = themeColor?.let { androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getTonedColor(it)) } ?: androidx.compose.ui.graphics.Color.DarkGray
+
+                    Chip(
+                        onClick = {
+                            com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
+                        },
+                        label = { Text(event.title ?: "No Title") },
+                        secondaryLabel = {
+                            Text(
+                                if (event.allDay) "All day"
+                                else com.sameerasw.essentials.utils.ThemeUtil.getTimeCountdown(event.begin)
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (event.allDay) {
+                                    Modifier.border(
+                                        width = 1.dp,
+                                        color = tonedThemeColor,
+                                        shape = MaterialTheme.shapes.large
+                                    )
+                                } else Modifier
+                            ),
+                        colors = if (event.allDay) {
+                            ChipDefaults.secondaryChipColors(
+                                backgroundColor = androidx.compose.ui.graphics.Color.Transparent,
+                                contentColor = androidx.compose.ui.graphics.Color.White,
+                                secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
+                            )
+                        } else {
+                            ChipDefaults.secondaryChipColors(
+                                backgroundColor = tonedThemeColor,
+                                contentColor = androidx.compose.ui.graphics.Color.White,
+                                secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    )
+                }
+            }
             }
         }
     }

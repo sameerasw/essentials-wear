@@ -177,6 +177,12 @@ private fun tileLayout(
             ActionBuilders.AndroidActivity.Builder()
                 .setPackageName(context.packageName)
                 .setClassName("com.sameerasw.essentials.presentation.MainActivity")
+                .addKeyToExtraMapping(
+                    "navigate_to",
+                    ActionBuilders.AndroidStringExtra.Builder()
+                        .setValue("schedule")
+                        .build()
+                )
                 .build()
         )
         .build()

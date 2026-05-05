@@ -78,6 +78,15 @@ class CalendarDataListenerService : WearableListenerService() {
                         deviceName
                     )
                     Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, RingerMode=$ringerMode, Device=$deviceName")
+
+                    // Trigger Battery Complication Update
+                    val batteryCompName = android.content.ComponentName(
+                        this,
+                        "com.sameerasw.essentials.complication.BatteryComplicationService"
+                    )
+                    androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
+                        .create(this, batteryCompName)
+                        .requestUpdateAll()
                 }
             }
         }

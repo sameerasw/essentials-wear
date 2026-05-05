@@ -183,38 +183,31 @@ fun YourAndroidScreen() {
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Battery Bubble
+                // Lock Bubble
                 Button(
                     onClick = {
                         HapticUtil.performUIHaptic(view)
-                        sendMessage("/request_device_info_sync")
+                        sendMessage("/lock_device")
                     },
-                    modifier = Modifier.size(52.dp),
-                    colors = bubbleColors,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .border(
+                            BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                            CircleShape
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White
+                    ),
+                    shape = CircleShape,
                     enabled = isDeviceFound
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val batteryIcon = if (isCharging) {
-                            R.drawable.rounded_battery_android_frame_bolt_24
-                        } else {
-                            when {
-                                batteryLevel >= 75 -> R.drawable.rounded_battery_android_frame_full_24
-                                batteryLevel >= 50 -> R.drawable.rounded_battery_android_frame_5_24
-                                batteryLevel > 20 -> R.drawable.rounded_battery_android_frame_2_24
-                                else -> R.drawable.rounded_battery_android_alert_24
-                            }
-                        }
                         Icon(
-                            painter = painterResource(id = batteryIcon),
+                            painter = painterResource(id = R.drawable.rounded_lock_24),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
-                        if (batteryLevel != -1) {
-                            Text(
-                                text = "$batteryLevel",
-                                style = MaterialTheme.typography.caption3
-                            )
-                        }
                     }
                 }
 

@@ -19,6 +19,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_NAVIGATE_TO = "navigate_to"
         const val NAV_SCHEDULE = "schedule"
+        const val NAV_YOUR_ANDROID = "your_android"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,8 +37,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WearApp(initialScreen: String? = null) {
-    val startDestination =
-        if (initialScreen == MainActivity.NAV_SCHEDULE) NavRoutes.SCHEDULE else NavRoutes.HOME
+    val startDestination = when (initialScreen) {
+        MainActivity.NAV_SCHEDULE -> NavRoutes.SCHEDULE
+        MainActivity.NAV_YOUR_ANDROID -> NavRoutes.YOUR_ANDROID
+        else -> NavRoutes.HOME
+    }
     val navController = rememberSwipeDismissableNavController()
 
     EssentialsTheme {

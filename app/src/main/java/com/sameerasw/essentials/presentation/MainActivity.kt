@@ -119,7 +119,9 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
         item {
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.title1,
+                style = MaterialTheme.typography.title1.copy(
+                    fontFamily = com.sameerasw.essentials.presentation.theme.GoogleSansFlexRoundedWide
+                ),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = lightAccentColor
@@ -214,6 +216,9 @@ fun ScheduleScreen() {
         val dateFormatter = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
         allEvents.groupBy { dateFormatter.format(Date(it.begin)) }
     }
+    val lightAccentColor = themeColor?.let {
+        androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getLightAccentColor(it))
+    } ?: androidx.compose.ui.graphics.Color(0xFFB39DDB.toInt())
 
     val listState = rememberScalingLazyListState()
 
@@ -231,9 +236,12 @@ fun ScheduleScreen() {
             item {
                 Text(
                     text = stringResource(R.string.upcoming_agenda),
-                    style = MaterialTheme.typography.title3,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
+                style = MaterialTheme.typography.title1.copy(
+                    fontFamily = com.sameerasw.essentials.presentation.theme.GoogleSansFlexRoundedWide
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = lightAccentColor
                 )
             }
 

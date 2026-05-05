@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,6 +28,7 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -115,7 +119,7 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
         item {
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.title3,
+                style = MaterialTheme.typography.title1,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = lightAccentColor
@@ -130,6 +134,13 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                     onNavigate(NavRoutes.SCHEDULE)
                 },
                 label = { Text(stringResource(R.string.feature_schedule)) },
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.rounded_schedule_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(ChipDefaults.IconSize).wrapContentSize(align = Alignment.Center)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(
                     backgroundColor = tonedThemeColor,
@@ -146,6 +157,13 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                 },
                 label = { Text(stringResource(R.string.feature_your_android)) },
                 secondaryLabel = { Text(stringResource(R.string.coming_soon)) },
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.rounded_mobile_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(ChipDefaults.IconSize).wrapContentSize(align = Alignment.Center)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(
                     contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
@@ -163,6 +181,13 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                 },
                 label = { Text(stringResource(R.string.feature_tools)) },
                 secondaryLabel = { Text(stringResource(R.string.coming_soon)) },
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.rounded_settings_heart_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(ChipDefaults.IconSize).wrapContentSize(align = Alignment.Center)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(
                     contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),

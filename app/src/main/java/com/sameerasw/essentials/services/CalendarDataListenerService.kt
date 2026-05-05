@@ -58,6 +58,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 
                 if (batteryLevel != -1) {
                     saveDeviceInfo(batteryLevel, isCharging)
+                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging")
                 }
             }
         }

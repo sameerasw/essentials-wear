@@ -26,14 +26,43 @@ fun YourAndroidScreen() {
     val listState = rememberScalingLazyListState()
     val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
     
-    val batteryLevel = prefs.getInt("phone_battery_level", -1)
-    val isCharging = prefs.getBoolean("phone_is_charging", false)
+    // Reactive state for battery info
+    val batteryLevelState = remember { mutableStateOf(prefs.getInt("phone_battery_level", -1)) }
+    val isChargingState = remember { mutableStateOf(prefs.getBoolean("phone_is_charging", false)) }
+
+    // Observe preference changes
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "phone_battery_level") {
+                batteryLevelState.value = p.getInt(key, -1)
+            } else if (key == "phone_is_charging") {
+                isChargingState.value = p.getBoolean(key, false)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    val batteryLevel = batteryLevelState.value
+    val isCharging = isChargingState.value
+
     val themeColor = androidx.compose.runtime.remember {
         com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context)
     }
     val lightAccentColor = themeColor?.let {
         androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getLightAccentColor(it))
     } ?: androidx.compose.ui.graphics.Color(0xFFB39DDB.toInt())
+
+    val tonedThemeColor = themeColor?.let {
+        androidx.compose.ui.graphics.Color(com.sameerasw.essentials.utils.ThemeUtil.getTonedColor(it))
+    } ?: androidx.compose.ui.graphics.Color.DarkGray
+
+    val bubbleColors = ButtonDefaults.buttonColors(
+        backgroundColor = lightAccentColor,
+        contentColor = androidx.compose.ui.graphics.Color.Black
+    )
 
     // Request sync from phone on entry
     LaunchedEffect(Unit) {
@@ -57,18 +86,18 @@ fun YourAndroidScreen() {
             item {
                 Text(
                     text = stringResource(R.string.your_android_title),
-                style = MaterialTheme.typography.title1.copy(
-                    fontFamily = com.sameerasw.essentials.presentation.theme.GoogleSansFlexRoundedWide
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                color = lightAccentColor
+                    style = MaterialTheme.typography.title1.copy(
+                        fontFamily = com.sameerasw.essentials.presentation.theme.GoogleSansFlexRoundedWide
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    color = lightAccentColor
                 )
             }
 
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -76,7 +105,6 @@ fun YourAndroidScreen() {
                     Button(
                         onClick = { 
                             HapticUtil.performUIHaptic(view)
-                            // Could trigger another sync request here
                             val nodeClient = Wearable.getNodeClient(context)
                             nodeClient.connectedNodes.addOnSuccessListener { nodes ->
                                 val messageClient = Wearable.getMessageClient(context)
@@ -85,11 +113,22 @@ fun YourAndroidScreen() {
                                 }
                             }
                         },
-                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
+                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
+                        colors = bubbleColors
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val batteryIcon = if (isCharging) {
+                                R.drawable.rounded_battery_android_frame_bolt_24
+                            } else {
+                                when {
+                                    batteryLevel >= 75 -> R.drawable.rounded_battery_android_frame_full_24
+                                    batteryLevel >= 50 -> R.drawable.rounded_battery_android_frame_5_24
+                                    batteryLevel > 20 -> R.drawable.rounded_battery_android_frame_2_24
+                                    else -> R.drawable.rounded_battery_android_alert_24
+                                }
+                            }
                             Icon(
-                                painter = painterResource(id = if (isCharging) R.drawable.rounded_battery_android_frame_bolt_24 else R.drawable.rounded_battery_android_frame_full_24),
+                                painter = painterResource(id = batteryIcon),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -108,7 +147,8 @@ fun YourAndroidScreen() {
                     Button(
                         onClick = { HapticUtil.performUIHaptic(view) },
                         enabled = false,
-                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
+                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
+                        colors = bubbleColors
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_shapes_24),
@@ -123,7 +163,8 @@ fun YourAndroidScreen() {
                     Button(
                         onClick = { HapticUtil.performUIHaptic(view) },
                         enabled = false,
-                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
+                        modifier = Modifier.size(ButtonDefaults.LargeButtonSize),
+                        colors = bubbleColors
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_shapes_24),

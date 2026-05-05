@@ -196,6 +196,7 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(
+                    backgroundColor = tonedThemeColor,
                     contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
                     secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
                 ),

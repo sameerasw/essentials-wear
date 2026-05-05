@@ -17,22 +17,32 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
     override fun getPreviewData(type: ComplicationType): ComplicationData? {
         return when (type) {
             ComplicationType.SHORT_TEXT -> createComplicationData("#FFFFFFFF", "Theme Color")
-            ComplicationType.RANGED_VALUE -> createRangedComplicationData(0xFFFFFFFF.toLong(), "Theme Color")
+            ComplicationType.RANGED_VALUE -> createRangedComplicationData(
+                0xFFFFFFFF.toLong(),
+                "Theme Color"
+            )
+
             else -> null
         }
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         val primaryColor = prefs.getInt("theme_primary_color", -1)
-        val targetColor = if (primaryColor != -1) primaryColor.toLong() and 0xFFFFFFFFL else 0xFFFFFFFFL
+        val targetColor =
+            if (primaryColor != -1) primaryColor.toLong() and 0xFFFFFFFFL else 0xFFFFFFFFL
 
         return when (request.complicationType) {
-            ComplicationType.RANGED_VALUE -> createRangedComplicationData(targetColor, "Theme Color")
+            ComplicationType.RANGED_VALUE -> createRangedComplicationData(
+                targetColor,
+                "Theme Color"
+            )
+
             ComplicationType.SHORT_TEXT -> {
                 val hexColor = String.format("#%08X", targetColor)
                 createComplicationData(hexColor, "Theme Color")
             }
+
             else -> {
                 // Fallback for other types or if data is missing
                 when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {

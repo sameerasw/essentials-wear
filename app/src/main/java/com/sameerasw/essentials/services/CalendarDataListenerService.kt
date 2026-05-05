@@ -2,12 +2,12 @@ package com.sameerasw.essentials.services
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
+import androidx.wear.tiles.TileService
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
-import androidx.wear.tiles.TileService
+import com.google.gson.Gson
 import com.sameerasw.essentials.tile.MainTileService
 
 class CalendarDataListenerService : WearableListenerService() {
@@ -28,15 +28,18 @@ class CalendarDataListenerService : WearableListenerService() {
                     val primaryColor = dataMap.getInt("theme_primary_color", -1)
                     val secondaryColor = dataMap.getInt("theme_secondary_color", -1)
                     val tertiaryColor = dataMap.getInt("theme_tertiary_color", -1)
-                    
+
                     saveData(
                         eventList.map { it.toBundle() },
                         if (primaryColor != -1) primaryColor else null,
                         if (secondaryColor != -1) secondaryColor else null,
                         if (tertiaryColor != -1) tertiaryColor else null
                     )
-                    Log.d(TAG, "Saved ${eventList.size} events and colors: P=$primaryColor, S=$secondaryColor, T=$tertiaryColor")
-                    
+                    Log.d(
+                        TAG,
+                        "Saved ${eventList.size} events and colors: P=$primaryColor, S=$secondaryColor, T=$tertiaryColor"
+                    )
+
                     // Trigger Tile Update
                     TileService.getUpdater(this)
                         .requestUpdate(MainTileService::class.java)
@@ -55,7 +58,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
                 val batteryLevel = dataMap.getInt("battery_level", -1)
                 val isCharging = dataMap.getBoolean("is_charging", false)
-                
+
                 if (batteryLevel != -1) {
                     saveDeviceInfo(batteryLevel, isCharging)
                     Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging")
@@ -65,7 +68,7 @@ class CalendarDataListenerService : WearableListenerService() {
     }
 
     private fun saveDeviceInfo(batteryLevel: Int, isCharging: Boolean) {
-        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
             .putInt("phone_battery_level", batteryLevel)
             .putBoolean("phone_is_charging", isCharging)
@@ -73,8 +76,13 @@ class CalendarDataListenerService : WearableListenerService() {
             .apply()
     }
 
-    private fun saveData(events: List<android.os.Bundle>, primaryColor: Int?, secondaryColor: Int?, tertiaryColor: Int?) {
-        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+    private fun saveData(
+        events: List<android.os.Bundle>,
+        primaryColor: Int?,
+        secondaryColor: Int?,
+        tertiaryColor: Int?
+    ) {
+        val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         val json = Gson().toJson(events.map { bundle ->
             mapOf(
                 "id" to bundle.getLong("id"),

@@ -2,6 +2,7 @@ package com.sameerasw.essentials.presentation.yourandroid
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,6 +65,7 @@ fun YourAndroidScreen() {
     val flashlightMaxLevelState = remember { mutableStateOf(prefs.getInt("phone_flashlight_max_level", 1)) }
     val flashlightIntensitySupportedState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_intensity_supported", false)) }
     val ringerModeState = remember { mutableStateOf(prefs.getInt("phone_ringer_mode", 2)) }
+    val deviceNameState = remember { mutableStateOf(prefs.getString("phone_device_name", "")) }
 
     // Local brightness for smooth crown adjustment
     var localFlashlightLevel by remember { mutableStateOf(flashlightLevelState.value.toFloat()) }
@@ -98,6 +100,7 @@ fun YourAndroidScreen() {
                     "phone_flashlight_max_level" -> flashlightMaxLevelState.value = p.getInt(key, 1)
                     "phone_flashlight_intensity_supported" -> flashlightIntensitySupportedState.value = p.getBoolean(key, false)
                     "phone_ringer_mode" -> ringerModeState.value = p.getInt(key, 2)
+                    "phone_device_name" -> deviceNameState.value = p.getString(key, "")
                 }
             }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -168,9 +171,11 @@ fun YourAndroidScreen() {
             .focusable()
     ) {
         item {
+            val title = if (!deviceNameState.value.isNullOrBlank()) deviceNameState.value!! else stringResource(R.string.your_android_title)
             EssentialsTitle(
-                text = stringResource(R.string.your_android_title),
-                color = lightAccentColor
+                text = title,
+                color = lightAccentColor,
+                modifier = Modifier.basicMarquee()
             )
         }
 
@@ -265,13 +270,6 @@ fun YourAndroidScreen() {
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp)
                             )
-                            if (intensitySupported && flashlightOn) {
-                                val percentage = (flashlightLevel * 100 / maxOf(1, maxLevel.toInt())).toInt()
-                                Text(
-                                    text = "$percentage",
-                                    style = MaterialTheme.typography.caption3
-                                )
-                            }
                         }
                     }
                 }

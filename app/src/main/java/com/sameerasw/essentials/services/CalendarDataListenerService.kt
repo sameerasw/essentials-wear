@@ -65,6 +65,7 @@ class CalendarDataListenerService : WearableListenerService() {
                     val flashlightMaxLevel = dataMap.getInt("flashlight_max_level", 1)
                     val flashlightIntensitySupported = dataMap.getBoolean("flashlight_intensity_supported", false)
                     val ringerMode = dataMap.getInt("ringer_mode", 2)
+                    val deviceName = dataMap.getString("device_name", "")
 
                     saveDeviceInfo(
                         batteryLevel, 
@@ -73,9 +74,10 @@ class CalendarDataListenerService : WearableListenerService() {
                         flashlightLevel, 
                         flashlightMaxLevel, 
                         flashlightIntensitySupported,
-                        ringerMode
+                        ringerMode,
+                        deviceName
                     )
-                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, RingerMode=$ringerMode")
+                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, RingerMode=$ringerMode, Device=$deviceName")
                 }
             }
         }
@@ -88,7 +90,8 @@ class CalendarDataListenerService : WearableListenerService() {
         flashlightLevel: Int,
         flashlightMaxLevel: Int,
         flashlightIntensitySupported: Boolean,
-        ringerMode: Int
+        ringerMode: Int,
+        deviceName: String
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -99,6 +102,7 @@ class CalendarDataListenerService : WearableListenerService() {
             .putInt("phone_flashlight_max_level", flashlightMaxLevel)
             .putBoolean("phone_flashlight_intensity_supported", flashlightIntensitySupported)
             .putInt("phone_ringer_mode", ringerMode)
+            .putString("phone_device_name", deviceName)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

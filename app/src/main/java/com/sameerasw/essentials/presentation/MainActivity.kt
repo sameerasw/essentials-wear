@@ -46,6 +46,7 @@ private val timeFormatter = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()
 object NavRoutes {
     const val HOME = "home"
     const val SCHEDULE = "schedule"
+    const val YOUR_ANDROID = "your_android"
 }
 
 class MainActivity : ComponentActivity() {
@@ -87,6 +88,9 @@ fun WearApp(initialScreen: String? = null) {
             }
             composable(NavRoutes.SCHEDULE) {
                 ScheduleScreen()
+            }
+            composable(NavRoutes.YOUR_ANDROID) {
+                YourAndroidScreen()
             }
         }
     }
@@ -156,9 +160,9 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
             Chip(
                 onClick = {
                     com.sameerasw.essentials.utils.HapticUtil.performUIHaptic(view)
+                    onNavigate(NavRoutes.YOUR_ANDROID)
                 },
                 label = { Text(stringResource(R.string.feature_your_android)) },
-                secondaryLabel = { Text(stringResource(R.string.coming_soon)) },
                 icon = {
                     Icon(
                         painter = painterResource(R.drawable.rounded_mobile_24),
@@ -168,10 +172,10 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(
-                    contentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                    secondaryContentColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
+                    backgroundColor = tonedThemeColor,
+                    contentColor = androidx.compose.ui.graphics.Color.White
                 ),
-                enabled = false
+                enabled = true
             )
         }
 

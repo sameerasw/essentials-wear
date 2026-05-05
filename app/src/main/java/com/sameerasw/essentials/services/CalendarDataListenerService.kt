@@ -14,6 +14,7 @@ class CalendarDataListenerService : WearableListenerService() {
     companion object {
         private const val TAG = "CalendarDataListener"
         private const val SYNC_PATH = "/calendar_events"
+        private const val DEVICE_INFO_PATH = "/device_info"
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -49,8 +50,26 @@ class CalendarDataListenerService : WearableListenerService() {
                         .create(this, componentName)
                         .requestUpdateAll()
                 }
+            } else if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == DEVICE_INFO_PATH) {
+                Log.d(TAG, "Received device info update")
+                val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+                val batteryLevel = dataMap.getInt("battery_level", -1)
+                val isCharging = dataMap.getBoolean("is_charging", false)
+                
+                if (batteryLevel != -1) {
+                    saveDeviceInfo(batteryLevel, isCharging)
+                }
             }
         }
+    }
+
+    private fun saveDeviceInfo(batteryLevel: Int, isCharging: Boolean) {
+        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt("phone_battery_level", batteryLevel)
+            .putBoolean("phone_is_charging", isCharging)
+            .putLong("phone_battery_timestamp", System.currentTimeMillis())
+            .apply()
     }
 
     private fun saveData(events: List<android.os.Bundle>, primaryColor: Int?, secondaryColor: Int?, tertiaryColor: Int?) {

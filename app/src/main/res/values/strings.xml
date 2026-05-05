@@ -12,4 +12,8 @@
     <string name="feature_your_android">Your Android</string>
     <string name="feature_tools">Tools</string>
     <string name="coming_soon">Coming Soon</string>
+    <string name="phone_battery">Phone Battery</string>
+    <string name="battery_level">%1$d%%</string>
+    <string name="battery_charging">Charging</string>
+    <string name="your_android_title">Your Android</string>
 </resources>

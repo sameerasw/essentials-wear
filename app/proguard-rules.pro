@@ -12,10 +12,27 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# preserve the line number information for debugging stack traces.
+-keepattributes SourceFile,LineNumberTable
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# GSON and generic signatures
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+
+# Gson rules
+-keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken {
+    protected <init>(...);
+}
+
+# Keep our data models used for serialization
+-keep class com.sameerasw.essentials.services.CalendarDataListenerService$CalendarEvent { *; }
+-keep class com.sameerasw.essentials.domain.model.** { *; }
+
+# Ensure anonymous classes used for TypeToken are not stripped
+-keep class * extends com.google.gson.reflect.TypeToken { *; }
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken { *; }

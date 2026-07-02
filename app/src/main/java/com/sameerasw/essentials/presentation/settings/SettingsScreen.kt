@@ -18,6 +18,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.ToggleChip
+import androidx.wear.compose.material.ToggleChipDefaults
+import androidx.wear.compose.material.Switch
+import androidx.wear.compose.material.Icon
+import androidx.wear.compose.material.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.DisposableEffect
+import com.google.android.gms.wearable.Wearable
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.presentation.components.EssentialsChip
 import com.sameerasw.essentials.presentation.components.EssentialsScreen
@@ -30,6 +45,7 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val view = LocalView.current
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
 
     val hasDndPermission = remember { mutableStateOf(notificationManager.isNotificationPolicyAccessGranted) }
     val hasWriteSecureSettings = remember {
@@ -37,6 +53,20 @@ fun SettingsScreen() {
             context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
                     android.content.pm.PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    val isSyncEnabled = remember { mutableStateOf(prefs.getBoolean("phone_watch_sync_sound_mode_enabled", false)) }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "phone_watch_sync_sound_mode_enabled") {
+                isSyncEnabled.value = p.getBoolean(key, false)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
     }
 
     // Refresh permissions when entering/returning
@@ -64,6 +94,51 @@ fun SettingsScreen() {
             EssentialsTitle(
                 text = stringResource(R.string.feature_settings),
                 color = lightAccentColor
+            )
+        }
+
+        // Sync Sound Mode Toggle
+        item {
+            ToggleChip(
+                checked = isSyncEnabled.value,
+                onCheckedChange = { checked ->
+                    HapticUtil.performUIHaptic(view)
+                    isSyncEnabled.value = checked
+                    prefs.edit().putBoolean("phone_watch_sync_sound_mode_enabled", checked).apply()
+                    // Send to phone
+                    val nodeClient = Wearable.getNodeClient(context)
+                    nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+                        val messageClient = Wearable.getMessageClient(context)
+                        for (node in nodes) {
+                            messageClient.sendMessage(
+                                node.id, 
+                                "/set_sync_sound_mode", 
+                                byteArrayOf(if (checked) 1 else 0)
+                            )
+                        }
+                    }
+                },
+                label = { Text("Sync Sound Mode", maxLines = 1) },
+                appIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.rounded_volume_up_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                toggleControl = {
+                    Switch(
+                        checked = isSyncEnabled.value,
+                        enabled = true
+                    )
+                },
+                colors = ToggleChipDefaults.toggleChipColors(
+                    checkedStartBackgroundColor = tonedThemeColor,
+                    checkedEndBackgroundColor = tonedThemeColor,
+                    uncheckedStartBackgroundColor = tonedThemeColor.copy(alpha = 0.5f),
+                    uncheckedEndBackgroundColor = tonedThemeColor.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
         }
 

@@ -195,6 +195,41 @@ class CalendarDataListenerService : WearableListenerService() {
         editor.apply()
     }
 
+    override fun onMessageReceived(messageEvent: com.google.android.gms.wearable.MessageEvent) {
+        super.onMessageReceived(messageEvent)
+        if (messageEvent.path == "/toggle_watch_adb_wifi") {
+            val hasPermission = checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (hasPermission) {
+                val isAdbWifiEnabled = android.provider.Settings.Global.getInt(contentResolver, "adb_wifi_enabled", 0) == 1
+                val newValue = if (isAdbWifiEnabled) 0 else 1
+                try {
+                    android.provider.Settings.Global.putInt(contentResolver, "adb_wifi_enabled", newValue)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to write adb_wifi_enabled setting", e)
+                }
+            }
+            sendStatusUpdateToPhone(this)
+        }
+    }
+
+    private fun sendStatusUpdateToPhone(context: Context) {
+        val hasPermission = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val isAdbWifiEnabled = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+        
+        val data = byteArrayOf(
+            if (isAdbWifiEnabled) 1 else 0,
+            if (hasPermission) 1 else 0
+        )
+        
+        val nodeClient = com.google.android.gms.wearable.Wearable.getNodeClient(context)
+        nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+            val messageClient = com.google.android.gms.wearable.Wearable.getMessageClient(context)
+            for (node in nodes) {
+                messageClient.sendMessage(node.id, "/watch_status_update", data)
+            }
+        }
+    }
+
     data class CalendarEvent(
         val id: Long,
         val title: String?,

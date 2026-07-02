@@ -69,7 +69,8 @@ fun YourAndroidScreen() {
     val deviceNameState = remember { mutableStateOf(prefs.getString("phone_device_name", "")) }
     val flashlightPulseEnabledState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_pulse_enabled", false)) }
     val aodStateState = remember { mutableStateOf(prefs.getInt("phone_aod_state", 0)) }
-    val defaultLayout = "LOCK,SOUND,FLASHLIGHT,FLASHLIGHT_PULSE,AOD"
+    val tapToWakeEnabledState = remember { mutableStateOf(prefs.getBoolean("phone_tap_to_wake_enabled", true)) }
+    val defaultLayout = "LOCK,SOUND,FLASHLIGHT,FLASHLIGHT_PULSE,AOD,TAP_TO_WAKE"
     val watchControlsLayoutState = remember { mutableStateOf(prefs.getString("phone_watch_controls_layout", defaultLayout) ?: defaultLayout) }
 
     // Local brightness for smooth crown adjustment
@@ -108,6 +109,7 @@ fun YourAndroidScreen() {
                     "phone_device_name" -> deviceNameState.value = p.getString(key, "")
                     "phone_flashlight_pulse_enabled" -> flashlightPulseEnabledState.value = p.getBoolean(key, false)
                     "phone_aod_state" -> aodStateState.value = p.getInt(key, 0)
+                    "phone_tap_to_wake_enabled" -> tapToWakeEnabledState.value = p.getBoolean(key, true)
                     "phone_watch_controls_layout" -> watchControlsLayoutState.value = p.getString(key, defaultLayout) ?: defaultLayout
                 }
             }
@@ -415,6 +417,42 @@ fun YourAndroidScreen() {
                                     }
                                     Icon(
                                         painter = painterResource(id = aodIcon),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            "TAP_TO_WAKE" -> {
+                                // Tap to Wake Bubble
+                                val tapToWakeEnabled = tapToWakeEnabledState.value
+                                val tapToWakeColors = if (tapToWakeEnabled) {
+                                    bubbleColors // Filled accent
+                                } else {
+                                    ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/toggle_tap_to_wake")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .then(
+                                            if (!tapToWakeEnabled) Modifier.border(
+                                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                                CircleShape
+                                            ) else Modifier
+                                        ),
+                                    colors = tapToWakeColors,
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (tapToWakeEnabled) R.drawable.rounded_touch_app_24 else R.drawable.rounded_do_not_touch_24),
                                         contentDescription = null,
                                         modifier = Modifier.size(24.dp)
                                     )

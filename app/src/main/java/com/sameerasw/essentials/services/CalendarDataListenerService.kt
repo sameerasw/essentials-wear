@@ -3,11 +3,16 @@ package com.sameerasw.essentials.services
 import android.content.Context
 import android.util.Log
 import androidx.wear.tiles.TileService
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
 import com.google.gson.Gson
+import com.sameerasw.essentials.R
 import com.sameerasw.essentials.tile.MainTileService
 import com.sameerasw.essentials.tile.PhoneBatteryTileService
 
@@ -61,42 +66,90 @@ class CalendarDataListenerService : WearableListenerService() {
                 val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
                 val batteryLevel = dataMap.getInt("battery_level", -1)
                 val isCharging = dataMap.getBoolean("is_charging", false)
+                val flashlightOn = dataMap.getBoolean("flashlight_on", false)
+                val flashlightLevel = dataMap.getInt("flashlight_level", 1)
+                val flashlightMaxLevel = dataMap.getInt("flashlight_max_level", 1)
+                val flashlightIntensitySupported = dataMap.getBoolean("flashlight_intensity_supported", false)
+                val ringerMode = dataMap.getInt("ringer_mode", 2)
+                val deviceName = dataMap.getString("device_name", "")
 
-                if (batteryLevel != -1) {
-                    val flashlightOn = dataMap.getBoolean("flashlight_on", false)
-                    val flashlightLevel = dataMap.getInt("flashlight_level", 1)
-                    val flashlightMaxLevel = dataMap.getInt("flashlight_max_level", 1)
-                    val flashlightIntensitySupported = dataMap.getBoolean("flashlight_intensity_supported", false)
-                    val ringerMode = dataMap.getInt("ringer_mode", 2)
-                    val deviceName = dataMap.getString("device_name", "")
+                val travelActive = dataMap.getBoolean("travel_active", false)
+                val travelName = dataMap.getString("travel_name", "") ?: ""
+                val travelProgress = dataMap.getFloat("travel_progress", 0f)
+                val travelRemainingTime = dataMap.getString("travel_remaining_time", "") ?: ""
+                val travelIconName = dataMap.getString("travel_icon_name", "") ?: ""
+                val travelIsPaused = dataMap.getBoolean("travel_is_paused", false)
+                val travelArrived = dataMap.getBoolean("travel_arrived", false)
 
-                    saveDeviceInfo(
-                        batteryLevel, 
-                        isCharging, 
-                        flashlightOn, 
-                        flashlightLevel, 
-                        flashlightMaxLevel, 
-                        flashlightIntensitySupported,
-                        ringerMode,
-                        deviceName
-                    )
-                    Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, Flashlight=$flashlightOn, RingerMode=$ringerMode, Device=$deviceName")
+                val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
+                val wasArrived = prefs.getBoolean("phone_travel_arrived", false)
 
-                    // Trigger Battery Complication Update
-                    val batteryCompName = android.content.ComponentName(
-                        this,
-                        "com.sameerasw.essentials.complication.BatteryComplicationService"
-                    )
-                    androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
-                        .create(this, batteryCompName)
-                        .requestUpdateAll()
+                saveDeviceInfo(
+                    batteryLevel, 
+                    isCharging, 
+                    flashlightOn, 
+                    flashlightLevel, 
+                    flashlightMaxLevel, 
+                    flashlightIntensitySupported,
+                    ringerMode,
+                    deviceName,
+                    travelActive,
+                    travelName,
+                    travelProgress,
+                    travelRemainingTime,
+                    travelIconName,
+                    travelIsPaused,
+                    travelArrived
+                )
+                Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
-                    // Trigger Phone Battery Tile Update
-                    TileService.getUpdater(this)
-                        .requestUpdate(PhoneBatteryTileService::class.java)
+                if (travelArrived && !wasArrived) {
+                    showWatchArrivalNotification(this, travelName)
                 }
+
+                // Trigger Battery Complication Update
+                val batteryCompName = android.content.ComponentName(
+                    this,
+                    "com.sameerasw.essentials.complication.BatteryComplicationService"
+                )
+                androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
+                    .create(this, batteryCompName)
+                    .requestUpdateAll()
+
+                // Trigger Phone Battery Tile Update
+                TileService.getUpdater(this)
+                    .requestUpdate(PhoneBatteryTileService::class.java)
             }
         }
+    }
+
+    private fun showWatchArrivalNotification(context: Context, destinationName: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "watch_location_reached"
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Arrival Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                enableLights(true)
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.rounded_schedule_24)
+            .setContentTitle("Arrived!")
+            .setContentText("You have reached $destinationName.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .build()
+            
+        notificationManager.notify(1002, notification)
     }
 
     private fun saveDeviceInfo(
@@ -107,7 +160,14 @@ class CalendarDataListenerService : WearableListenerService() {
         flashlightMaxLevel: Int,
         flashlightIntensitySupported: Boolean,
         ringerMode: Int,
-        deviceName: String
+        deviceName: String,
+        travelActive: Boolean,
+        travelName: String,
+        travelProgress: Float,
+        travelRemainingTime: String,
+        travelIconName: String,
+        travelIsPaused: Boolean,
+        travelArrived: Boolean
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -119,6 +179,13 @@ class CalendarDataListenerService : WearableListenerService() {
             .putBoolean("phone_flashlight_intensity_supported", flashlightIntensitySupported)
             .putInt("phone_ringer_mode", ringerMode)
             .putString("phone_device_name", deviceName)
+            .putBoolean("phone_travel_active", travelActive)
+            .putString("phone_travel_name", travelName)
+            .putFloat("phone_travel_progress", travelProgress)
+            .putString("phone_travel_remaining_time", travelRemainingTime)
+            .putString("phone_travel_icon_name", travelIconName)
+            .putBoolean("phone_travel_is_paused", travelIsPaused)
+            .putBoolean("phone_travel_arrived", travelArrived)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

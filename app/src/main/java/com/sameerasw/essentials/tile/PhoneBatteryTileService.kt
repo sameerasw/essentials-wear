@@ -21,7 +21,6 @@ import com.google.android.horologist.tiles.SuspendingTileService
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.presentation.MainActivity
 
-private const val RESOURCES_VERSION = "0"
 private const val ID_ICON_MOBILE = "ic_mobile"
 private const val ID_ICON_BATTERY_BOLT = "ic_battery_bolt"
 private const val ID_ICON_BATTERY_FULL = "ic_battery_full"
@@ -29,21 +28,29 @@ private const val ID_ICON_BATTERY_5 = "ic_battery_5"
 private const val ID_ICON_BATTERY_2 = "ic_battery_2"
 private const val ID_ICON_BATTERY_ALERT = "ic_battery_alert"
 
+private fun getResourcesVersion(context: Context): String {
+    val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+    val travelActive = prefs.getBoolean("phone_travel_active", false)
+    val travelIconName = prefs.getString("phone_travel_icon_name", "round_navigation_24") ?: "round_navigation_24"
+    val themeColor = com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context) ?: 0
+    return "v_${travelActive}_${travelIconName}_${themeColor}"
+}
+
 @OptIn(ExperimentalHorologistApi::class)
 class PhoneBatteryTileService : SuspendingTileService() {
 
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
-    ) = resources(this)
+    ) = resources(this, getResourcesVersion(this))
 
     override suspend fun tileRequest(
         requestParams: RequestBuilders.TileRequest
     ) = tile(requestParams, this)
 }
 
-private fun resources(context: Context): ResourceBuilders.Resources {
+private fun resources(context: Context, version: String): ResourceBuilders.Resources {
     return ResourceBuilders.Resources.Builder()
-        .setVersion(RESOURCES_VERSION)
+        .setVersion(version)
         .addIdToImageMapping(
             ID_ICON_MOBILE,
             ResourceBuilders.ImageResource.Builder()
@@ -104,6 +111,41 @@ private fun resources(context: Context): ResourceBuilders.Resources {
                 )
                 .build()
         )
+        .apply {
+            val travelIcons = listOf(
+                "round_navigation_24",
+                "rounded_home_24",
+                "rounded_work_24",
+                "rounded_apartment_24",
+                "rounded_shopping_cart_24",
+                "rounded_school_24",
+                "rounded_storefront_24",
+                "rounded_fork_spoon_24",
+                "rounded_favorite_24",
+                "rounded_account_balance_24",
+                "rounded_garage_home_24",
+                "rounded_beach_access_24",
+                "rounded_local_pizza_24",
+                "rounded_train_24",
+                "rounded_directions_bus_24",
+                "rounded_flight_24",
+                "rounded_directions_boat_24"
+            )
+            for (iconName in travelIcons) {
+                val resId = context.resources.getIdentifier(iconName, "drawable", context.packageName)
+                val finalResId = if (resId != 0) resId else R.drawable.rounded_mobile_24
+                addIdToImageMapping(
+                    iconName,
+                    ResourceBuilders.ImageResource.Builder()
+                        .setAndroidResourceByResId(
+                            ResourceBuilders.AndroidImageResourceByResId.Builder()
+                                .setResourceId(finalResId)
+                                .build()
+                        )
+                        .build()
+                )
+            }
+        }
         .build()
 }
 
@@ -124,7 +166,7 @@ private fun tile(
         .build()
 
     return TileBuilders.Tile.Builder()
-        .setResourcesVersion(RESOURCES_VERSION)
+        .setResourcesVersion(getResourcesVersion(context))
         .setTileTimeline(singleTileTimeline)
         .build()
 }
@@ -134,79 +176,85 @@ private fun tileLayout(
     context: Context,
 ): LayoutElementBuilders.LayoutElement {
     val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
-    val batteryLevel = prefs.getInt("phone_battery_level", -1)
-    val isCharging = prefs.getBoolean("phone_is_charging", false)
-    val deviceName = prefs.getString("phone_device_name", context.getString(R.string.your_android_title)) ?: context.getString(R.string.your_android_title)
-
+    val travelActive = prefs.getBoolean("phone_travel_active", false)
     val themeColor = com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context)
     val lightAccent = themeColor?.let { com.sameerasw.essentials.utils.ThemeUtil.getLightAccentColor(it) }
 
-    val progress = if (batteryLevel >= 0) batteryLevel.toFloat() / 100f else 0f
-
-    val progressIndicator = CircularProgressIndicator.Builder()
-        .setProgress(progress)
-        .setCircularProgressIndicatorColors(
-            ProgressIndicatorColors(
-                argb(lightAccent ?: 0xFFEEEEEE.toInt()),
-                argb(0x33FFFFFF.toInt())
+    val progressIndicator = if (travelActive) {
+        val travelProgress = prefs.getFloat("phone_travel_progress", 0f)
+        CircularProgressIndicator.Builder()
+            .setProgress(travelProgress)
+            .setCircularProgressIndicatorColors(
+                ProgressIndicatorColors(
+                    argb(lightAccent ?: 0xFFEEEEEE.toInt()),
+                    argb(0x33FFFFFF.toInt())
+                )
             )
-        )
-        .build()
+            .build()
+    } else {
+        val batteryLevel = prefs.getInt("phone_battery_level", -1)
+        val progress = if (batteryLevel >= 0) batteryLevel.toFloat() / 100f else 0f
+        CircularProgressIndicator.Builder()
+            .setProgress(progress)
+            .setCircularProgressIndicatorColors(
+                ProgressIndicatorColors(
+                    argb(lightAccent ?: 0xFFEEEEEE.toInt()),
+                    argb(0x33FFFFFF.toInt())
+                )
+            )
+            .build()
+    }
 
     val columnBuilder = LayoutElementBuilders.Column.Builder()
         .setWidth(DimensionBuilders.expand())
         .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
 
-    // Phone icon
-    columnBuilder.addContent(
-        LayoutElementBuilders.Image.Builder()
-            .setResourceId(ID_ICON_MOBILE)
-            .setWidth(DimensionBuilders.dp(32f))
-            .setHeight(DimensionBuilders.dp(32f))
-            .setColorFilter(
-                LayoutElementBuilders.ColorFilter.Builder()
-                    .setTint(argb(lightAccent ?: Colors.DEFAULT.primary))
-                    .build()
-            )
-            .build()
-    )
+    if (travelActive) {
+        val travelName = prefs.getString("phone_travel_name", "") ?: ""
+        val travelRemainingTime = prefs.getString("phone_travel_remaining_time", "") ?: ""
+        val travelIconName = prefs.getString("phone_travel_icon_name", "round_navigation_24") ?: "round_navigation_24"
+        val travelIsPaused = prefs.getBoolean("phone_travel_is_paused", false)
 
-    // Spacer
-    columnBuilder.addContent(
-        LayoutElementBuilders.Spacer.Builder()
-            .setHeight(DimensionBuilders.dp(4f))
-            .build()
-    )
+        val displayName = if (travelIsPaused) "$travelName (Paused)" else travelName
 
-    // Device Name
-    columnBuilder.addContent(
-        Text.Builder(context, deviceName)
-            .setColor(argb(0xFFFFFFFF.toInt()))
-            .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-            .setMaxLines(2)
-            .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
-            .build()
-    )
+        // Travel Icon
+        columnBuilder.addContent(
+            LayoutElementBuilders.Image.Builder()
+                .setResourceId(travelIconName)
+                .setWidth(DimensionBuilders.dp(32f))
+                .setHeight(DimensionBuilders.dp(32f))
+                .setColorFilter(
+                    LayoutElementBuilders.ColorFilter.Builder()
+                        .setTint(argb(lightAccent ?: Colors.DEFAULT.primary))
+                        .build()
+                )
+                .build()
+        )
 
-    val batteryIconId = if (isCharging) {
-        ID_ICON_BATTERY_BOLT
-    } else {
-        when {
-            batteryLevel >= 75 -> ID_ICON_BATTERY_FULL
-            batteryLevel >= 50 -> ID_ICON_BATTERY_5
-            batteryLevel > 20 -> ID_ICON_BATTERY_2
-            else -> ID_ICON_BATTERY_ALERT
-        }
-    }
+        // Spacer
+        columnBuilder.addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setHeight(DimensionBuilders.dp(4f))
+                .build()
+        )
 
-    // Battery row: icon + percentage
-    if (batteryLevel >= 0) {
+        // Travel Name
+        columnBuilder.addContent(
+            Text.Builder(context, displayName)
+                .setColor(argb(0xFFFFFFFF.toInt()))
+                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                .setMaxLines(2)
+                .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
+                .build()
+        )
+
+        // Travel row: icon + remaining time
         columnBuilder.addContent(
             LayoutElementBuilders.Row.Builder()
                 .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
                 .addContent(
                     LayoutElementBuilders.Image.Builder()
-                        .setResourceId(batteryIconId)
+                        .setResourceId("round_navigation_24")
                         .setWidth(DimensionBuilders.dp(16f))
                         .setHeight(DimensionBuilders.dp(16f))
                         .setColorFilter(
@@ -222,13 +270,91 @@ private fun tileLayout(
                         .build()
                 )
                 .addContent(
-                    Text.Builder(context, "$batteryLevel%")
+                    Text.Builder(context, travelRemainingTime)
                         .setColor(argb(lightAccent ?: Colors.DEFAULT.primary))
                         .setTypography(Typography.TYPOGRAPHY_CAPTION1)
                         .build()
                 )
                 .build()
         )
+    } else {
+        val batteryLevel = prefs.getInt("phone_battery_level", -1)
+        val isCharging = prefs.getBoolean("phone_is_charging", false)
+        val deviceName = prefs.getString("phone_device_name", context.getString(R.string.your_android_title)) ?: context.getString(R.string.your_android_title)
+
+        // Phone icon
+        columnBuilder.addContent(
+            LayoutElementBuilders.Image.Builder()
+                .setResourceId(ID_ICON_MOBILE)
+                .setWidth(DimensionBuilders.dp(32f))
+                .setHeight(DimensionBuilders.dp(32f))
+                .setColorFilter(
+                    LayoutElementBuilders.ColorFilter.Builder()
+                        .setTint(argb(lightAccent ?: Colors.DEFAULT.primary))
+                        .build()
+                )
+                .build()
+        )
+
+        // Spacer
+        columnBuilder.addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setHeight(DimensionBuilders.dp(4f))
+                .build()
+        )
+
+        // Device Name
+        columnBuilder.addContent(
+            Text.Builder(context, deviceName)
+                .setColor(argb(0xFFFFFFFF.toInt()))
+                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                .setMaxLines(2)
+                .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
+                .build()
+        )
+
+        val batteryIconId = if (isCharging) {
+            ID_ICON_BATTERY_BOLT
+        } else {
+            when {
+                batteryLevel >= 75 -> ID_ICON_BATTERY_FULL
+                batteryLevel >= 50 -> ID_ICON_BATTERY_5
+                batteryLevel > 20 -> ID_ICON_BATTERY_2
+                else -> ID_ICON_BATTERY_ALERT
+            }
+        }
+
+        // Battery row: icon + percentage
+        if (batteryLevel >= 0) {
+            columnBuilder.addContent(
+                LayoutElementBuilders.Row.Builder()
+                    .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                    .addContent(
+                        LayoutElementBuilders.Image.Builder()
+                            .setResourceId(batteryIconId)
+                            .setWidth(DimensionBuilders.dp(16f))
+                            .setHeight(DimensionBuilders.dp(16f))
+                            .setColorFilter(
+                                LayoutElementBuilders.ColorFilter.Builder()
+                                    .setTint(argb(lightAccent ?: Colors.DEFAULT.primary))
+                                    .build()
+                            )
+                            .build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Spacer.Builder()
+                            .setWidth(DimensionBuilders.dp(4f))
+                            .build()
+                    )
+                    .addContent(
+                        Text.Builder(context, "$batteryLevel%")
+                            .setColor(argb(lightAccent ?: Colors.DEFAULT.primary))
+                            .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                            .build()
+                    )
+                    .build()
+            )
+        }
     }
 
     val openAppIntent = ActionBuilders.LaunchAction.Builder()

@@ -23,7 +23,11 @@ import com.sameerasw.essentials.presentation.MainActivity
 
 private const val RESOURCES_VERSION = "0"
 private const val ID_ICON_MOBILE = "ic_mobile"
-private const val ID_ICON_BATTERY = "ic_battery"
+private const val ID_ICON_BATTERY_BOLT = "ic_battery_bolt"
+private const val ID_ICON_BATTERY_FULL = "ic_battery_full"
+private const val ID_ICON_BATTERY_5 = "ic_battery_5"
+private const val ID_ICON_BATTERY_2 = "ic_battery_2"
+private const val ID_ICON_BATTERY_ALERT = "ic_battery_alert"
 
 @OptIn(ExperimentalHorologistApi::class)
 class PhoneBatteryTileService : SuspendingTileService() {
@@ -51,11 +55,51 @@ private fun resources(context: Context): ResourceBuilders.Resources {
                 .build()
         )
         .addIdToImageMapping(
-            ID_ICON_BATTERY,
+            ID_ICON_BATTERY_BOLT,
+            ResourceBuilders.ImageResource.Builder()
+                .setAndroidResourceByResId(
+                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                        .setResourceId(R.drawable.rounded_battery_android_frame_bolt_24)
+                        .build()
+                )
+                .build()
+        )
+        .addIdToImageMapping(
+            ID_ICON_BATTERY_FULL,
+            ResourceBuilders.ImageResource.Builder()
+                .setAndroidResourceByResId(
+                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                        .setResourceId(R.drawable.rounded_battery_android_frame_full_24)
+                        .build()
+                )
+                .build()
+        )
+        .addIdToImageMapping(
+            ID_ICON_BATTERY_5,
             ResourceBuilders.ImageResource.Builder()
                 .setAndroidResourceByResId(
                     ResourceBuilders.AndroidImageResourceByResId.Builder()
                         .setResourceId(R.drawable.rounded_battery_android_frame_5_24)
+                        .build()
+                )
+                .build()
+        )
+        .addIdToImageMapping(
+            ID_ICON_BATTERY_2,
+            ResourceBuilders.ImageResource.Builder()
+                .setAndroidResourceByResId(
+                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                        .setResourceId(R.drawable.rounded_battery_android_frame_2_24)
+                        .build()
+                )
+                .build()
+        )
+        .addIdToImageMapping(
+            ID_ICON_BATTERY_ALERT,
+            ResourceBuilders.ImageResource.Builder()
+                .setAndroidResourceByResId(
+                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                        .setResourceId(R.drawable.rounded_battery_android_alert_24)
                         .build()
                 )
                 .build()
@@ -91,6 +135,7 @@ private fun tileLayout(
 ): LayoutElementBuilders.LayoutElement {
     val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
     val batteryLevel = prefs.getInt("phone_battery_level", -1)
+    val isCharging = prefs.getBoolean("phone_is_charging", false)
     val deviceName = prefs.getString("phone_device_name", context.getString(R.string.your_android_title)) ?: context.getString(R.string.your_android_title)
 
     val themeColor = com.sameerasw.essentials.utils.ThemeUtil.getThemeColor(context)
@@ -143,6 +188,17 @@ private fun tileLayout(
             .build()
     )
 
+    val batteryIconId = if (isCharging) {
+        ID_ICON_BATTERY_BOLT
+    } else {
+        when {
+            batteryLevel >= 75 -> ID_ICON_BATTERY_FULL
+            batteryLevel >= 50 -> ID_ICON_BATTERY_5
+            batteryLevel > 20 -> ID_ICON_BATTERY_2
+            else -> ID_ICON_BATTERY_ALERT
+        }
+    }
+
     // Battery row: icon + percentage
     if (batteryLevel >= 0) {
         columnBuilder.addContent(
@@ -150,7 +206,7 @@ private fun tileLayout(
                 .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
                 .addContent(
                     LayoutElementBuilders.Image.Builder()
-                        .setResourceId(ID_ICON_BATTERY)
+                        .setResourceId(batteryIconId)
                         .setWidth(DimensionBuilders.dp(16f))
                         .setHeight(DimensionBuilders.dp(16f))
                         .setColorFilter(

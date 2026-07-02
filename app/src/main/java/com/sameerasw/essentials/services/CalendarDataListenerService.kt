@@ -9,6 +9,7 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
 import com.google.gson.Gson
 import com.sameerasw.essentials.tile.MainTileService
+import com.sameerasw.essentials.tile.PhoneBatteryTileService
 
 class CalendarDataListenerService : WearableListenerService() {
     companion object {
@@ -41,8 +42,10 @@ class CalendarDataListenerService : WearableListenerService() {
                     )
 
                     // Trigger Tile Update
-                    TileService.getUpdater(this)
-                        .requestUpdate(MainTileService::class.java)
+                    TileService.getUpdater(this).apply {
+                        requestUpdate(MainTileService::class.java)
+                        requestUpdate(PhoneBatteryTileService::class.java)
+                    }
 
                     // Trigger Complication Update
                     val componentName = android.content.ComponentName(
@@ -87,6 +90,10 @@ class CalendarDataListenerService : WearableListenerService() {
                     androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
                         .create(this, batteryCompName)
                         .requestUpdateAll()
+
+                    // Trigger Phone Battery Tile Update
+                    TileService.getUpdater(this)
+                        .requestUpdate(PhoneBatteryTileService::class.java)
                 }
             }
         }

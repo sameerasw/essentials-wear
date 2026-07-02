@@ -1,6 +1,7 @@
 package com.sameerasw.essentials.services
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.wear.tiles.TileService
 import android.app.NotificationChannel
@@ -12,7 +13,6 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
 import com.google.gson.Gson
-import com.sameerasw.essentials.R
 import com.sameerasw.essentials.tile.MainTileService
 import com.sameerasw.essentials.tile.PhoneBatteryTileService
 
@@ -77,12 +77,9 @@ class CalendarDataListenerService : WearableListenerService() {
                 val travelName = dataMap.getString("travel_name", "") ?: ""
                 val travelProgress = dataMap.getFloat("travel_progress", 0f)
                 val travelRemainingTime = dataMap.getString("travel_remaining_time", "") ?: ""
+                val travelRemainingDistance = dataMap.getString("travel_remaining_distance", "") ?: ""
                 val travelIconName = dataMap.getString("travel_icon_name", "") ?: ""
                 val travelIsPaused = dataMap.getBoolean("travel_is_paused", false)
-                val travelArrived = dataMap.getBoolean("travel_arrived", false)
-
-                val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
-                val wasArrived = prefs.getBoolean("phone_travel_arrived", false)
 
                 saveDeviceInfo(
                     batteryLevel, 
@@ -97,15 +94,11 @@ class CalendarDataListenerService : WearableListenerService() {
                     travelName,
                     travelProgress,
                     travelRemainingTime,
+                    travelRemainingDistance,
                     travelIconName,
-                    travelIsPaused,
-                    travelArrived
+                    travelIsPaused
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
-
-                if (travelArrived && !wasArrived) {
-                    showWatchArrivalNotification(this, travelName)
-                }
 
                 // Trigger Battery Complication Update
                 val batteryCompName = android.content.ComponentName(
@@ -123,35 +116,6 @@ class CalendarDataListenerService : WearableListenerService() {
         }
     }
 
-    private fun showWatchArrivalNotification(context: Context, destinationName: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "watch_location_reached"
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Arrival Alerts",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-        
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.rounded_schedule_24)
-            .setContentTitle("Arrived!")
-            .setContentText("You have reached $destinationName.")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setAutoCancel(true)
-            .build()
-            
-        notificationManager.notify(1002, notification)
-    }
-
     private fun saveDeviceInfo(
         batteryLevel: Int, 
         isCharging: Boolean,
@@ -165,9 +129,9 @@ class CalendarDataListenerService : WearableListenerService() {
         travelName: String,
         travelProgress: Float,
         travelRemainingTime: String,
+        travelRemainingDistance: String,
         travelIconName: String,
-        travelIsPaused: Boolean,
-        travelArrived: Boolean
+        travelIsPaused: Boolean
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -183,9 +147,9 @@ class CalendarDataListenerService : WearableListenerService() {
             .putString("phone_travel_name", travelName)
             .putFloat("phone_travel_progress", travelProgress)
             .putString("phone_travel_remaining_time", travelRemainingTime)
+            .putString("phone_travel_remaining_distance", travelRemainingDistance)
             .putString("phone_travel_icon_name", travelIconName)
             .putBoolean("phone_travel_is_paused", travelIsPaused)
-            .putBoolean("phone_travel_arrived", travelArrived)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

@@ -277,6 +277,21 @@ private fun tileLayout(
                 )
                 .build()
         )
+
+        val travelRemainingDistance = prefs.getString("phone_travel_remaining_distance", "") ?: ""
+        if (travelRemainingDistance.isNotEmpty()) {
+            columnBuilder.addContent(
+                LayoutElementBuilders.Spacer.Builder()
+                    .setHeight(DimensionBuilders.dp(2f))
+                    .build()
+            )
+            columnBuilder.addContent(
+                Text.Builder(context, travelRemainingDistance)
+                    .setColor(argb(0xFFFFFFFF.toInt()))
+                    .setTypography(Typography.TYPOGRAPHY_CAPTION2)
+                    .build()
+            )
+        }
     } else {
         val batteryLevel = prefs.getInt("phone_battery_level", -1)
         val isCharging = prefs.getBoolean("phone_is_charging", false)

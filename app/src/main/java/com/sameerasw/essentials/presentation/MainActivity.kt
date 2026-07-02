@@ -13,6 +13,7 @@ import com.sameerasw.essentials.presentation.navigation.NavRoutes
 import com.sameerasw.essentials.presentation.schedule.ScheduleScreen
 import com.sameerasw.essentials.presentation.theme.EssentialsTheme
 import com.sameerasw.essentials.presentation.yourandroid.YourAndroidScreen
+import com.sameerasw.essentials.presentation.settings.SettingsScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -59,6 +60,9 @@ fun WearApp(initialScreen: String? = null) {
             }
             composable(NavRoutes.YOUR_ANDROID) {
                 YourAndroidScreen()
+            }
+            composable(NavRoutes.SETTINGS) {
+                SettingsScreen()
             }
         }
     }

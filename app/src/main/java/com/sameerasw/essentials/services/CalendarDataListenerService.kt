@@ -84,6 +84,11 @@ class CalendarDataListenerService : WearableListenerService() {
                 val aodState = dataMap.getInt("aod_state", 0)
                 val watchControlsLayout = dataMap.getString("watch_controls_layout", "") ?: ""
                 val tapToWakeEnabled = dataMap.getBoolean("tap_to_wake_enabled", true)
+                val watchSyncSoundModeEnabled = dataMap.getBoolean("watch_sync_sound_mode_enabled", false)
+
+                if (watchSyncSoundModeEnabled) {
+                    syncWatchRingerMode(ringerMode)
+                }
 
                 saveDeviceInfo(
                     batteryLevel, 
@@ -104,7 +109,8 @@ class CalendarDataListenerService : WearableListenerService() {
                     flashlightPulseEnabled,
                     aodState,
                     watchControlsLayout,
-                    tapToWakeEnabled
+                    tapToWakeEnabled,
+                    watchSyncSoundModeEnabled
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
@@ -143,7 +149,8 @@ class CalendarDataListenerService : WearableListenerService() {
         flashlightPulseEnabled: Boolean,
         aodState: Int,
         watchControlsLayout: String,
-        tapToWakeEnabled: Boolean
+        tapToWakeEnabled: Boolean,
+        watchSyncSoundModeEnabled: Boolean
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -166,8 +173,27 @@ class CalendarDataListenerService : WearableListenerService() {
             .putInt("phone_aod_state", aodState)
             .putString("phone_watch_controls_layout", watchControlsLayout)
             .putBoolean("phone_tap_to_wake_enabled", tapToWakeEnabled)
+            .putBoolean("phone_watch_sync_sound_mode_enabled", watchSyncSoundModeEnabled)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
+    }
+
+    private fun syncWatchRingerMode(phoneRingerMode: Int) {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager ?: return
+
+        val targetMode = when (phoneRingerMode) {
+            2 -> android.media.AudioManager.RINGER_MODE_NORMAL
+            1, 0 -> android.media.AudioManager.RINGER_MODE_VIBRATE
+            else -> android.media.AudioManager.RINGER_MODE_NORMAL
+        }
+
+        if (audioManager.ringerMode != targetMode) {
+            try {
+                audioManager.ringerMode = targetMode
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set watch ringer mode", e)
+            }
+        }
     }
 
     private fun saveData(

@@ -66,19 +66,16 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
             )
         }
 
-        // Tools
+        // Settings
         item {
             EssentialsChip(
-                label = stringResource(R.string.feature_tools),
-                onClick = { },
-                secondaryLabel = stringResource(R.string.coming_soon),
+                label = stringResource(R.string.feature_settings),
+                onClick = { onNavigate(NavRoutes.SETTINGS) },
                 icon = painterResource(R.drawable.rounded_settings_heart_24),
                 colors = ChipDefaults.secondaryChipColors(
                     backgroundColor = tonedThemeColor,
-                    contentColor = Color.White.copy(alpha = 0.5f),
-                    secondaryContentColor = Color.White.copy(alpha = 0.3f)
+                    contentColor = Color.White
                 ),
-                enabled = false,
                 border = ChipDefaults.chipBorder(
                     borderStroke = null
                 )

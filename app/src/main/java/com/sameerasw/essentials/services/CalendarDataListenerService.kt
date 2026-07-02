@@ -82,6 +82,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 val travelIsPaused = dataMap.getBoolean("travel_is_paused", false)
                 val flashlightPulseEnabled = dataMap.getBoolean("flashlight_pulse_enabled", false)
                 val aodState = dataMap.getInt("aod_state", 0)
+                val watchControlsLayout = dataMap.getString("watch_controls_layout", "") ?: ""
 
                 saveDeviceInfo(
                     batteryLevel, 
@@ -100,7 +101,8 @@ class CalendarDataListenerService : WearableListenerService() {
                     travelIconName,
                     travelIsPaused,
                     flashlightPulseEnabled,
-                    aodState
+                    aodState,
+                    watchControlsLayout
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
@@ -137,7 +139,8 @@ class CalendarDataListenerService : WearableListenerService() {
         travelIconName: String,
         travelIsPaused: Boolean,
         flashlightPulseEnabled: Boolean,
-        aodState: Int
+        aodState: Int,
+        watchControlsLayout: String
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -158,6 +161,7 @@ class CalendarDataListenerService : WearableListenerService() {
             .putBoolean("phone_travel_is_paused", travelIsPaused)
             .putBoolean("phone_flashlight_pulse_enabled", flashlightPulseEnabled)
             .putInt("phone_aod_state", aodState)
+            .putString("phone_watch_controls_layout", watchControlsLayout)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

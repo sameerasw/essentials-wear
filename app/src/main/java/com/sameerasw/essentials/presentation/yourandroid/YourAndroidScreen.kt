@@ -69,6 +69,8 @@ fun YourAndroidScreen() {
     val deviceNameState = remember { mutableStateOf(prefs.getString("phone_device_name", "")) }
     val flashlightPulseEnabledState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_pulse_enabled", false)) }
     val aodStateState = remember { mutableStateOf(prefs.getInt("phone_aod_state", 0)) }
+    val defaultLayout = "LOCK,SOUND,FLASHLIGHT,FLASHLIGHT_PULSE,AOD"
+    val watchControlsLayoutState = remember { mutableStateOf(prefs.getString("phone_watch_controls_layout", defaultLayout) ?: defaultLayout) }
 
     // Local brightness for smooth crown adjustment
     var localFlashlightLevel by remember { mutableStateOf(flashlightLevelState.value.toFloat()) }
@@ -106,6 +108,7 @@ fun YourAndroidScreen() {
                     "phone_device_name" -> deviceNameState.value = p.getString(key, "")
                     "phone_flashlight_pulse_enabled" -> flashlightPulseEnabledState.value = p.getBoolean(key, false)
                     "phone_aod_state" -> aodStateState.value = p.getInt(key, 0)
+                    "phone_watch_controls_layout" -> watchControlsLayoutState.value = p.getString(key, defaultLayout) ?: defaultLayout
                 }
             }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -155,13 +158,15 @@ fun YourAndroidScreen() {
         focusRequester.requestFocus()
     }
 
-    val totalButtons = 5
-    val rows = remember {
-        val result = mutableListOf<List<Int>>()
+    val activeKeys = remember(watchControlsLayoutState.value) {
+        watchControlsLayoutState.value.split(",").filter { it.isNotBlank() }
+    }
+    val rows = remember(activeKeys) {
+        val result = mutableListOf<List<String>>()
         var index = 0
         var size = 3
-        while (index < totalButtons) {
-            result.add((index until minOf(index + size, totalButtons)).toList())
+        while (index < activeKeys.size) {
+            result.add(activeKeys.subList(index, minOf(index + size, activeKeys.size)))
             index += size
             size = if (size == 3) 2 else 3
         }
@@ -199,7 +204,7 @@ fun YourAndroidScreen() {
             )
         }
 
-        for (rowIndices in rows) {
+        for (rowItems in rows) {
             item {
                 Row(
                     modifier = Modifier
@@ -208,9 +213,9 @@ fun YourAndroidScreen() {
                     horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    for (idx in rowIndices) {
-                        when (idx) {
-                            0 -> {
+                    for (key in rowItems) {
+                        when (key) {
+                            "LOCK" -> {
                                 // Lock Bubble
                                 Button(
                                     onClick = {
@@ -239,7 +244,7 @@ fun YourAndroidScreen() {
                                     }
                                 }
                             }
-                            1 -> {
+                            "FLASHLIGHT" -> {
                                 // Flashlight Bubble
                                 val flashlightOn = flashlightOnState.value
                                 val flashlightLevel = localFlashlightLevel
@@ -294,7 +299,7 @@ fun YourAndroidScreen() {
                                     }
                                 }
                             }
-                            2 -> {
+                            "SOUND" -> {
                                 // Sound Mode Bubble
                                 val ringerMode = ringerModeState.value
                                 val isNormal = ringerMode == 2 // AudioManager.RINGER_MODE_NORMAL
@@ -337,7 +342,7 @@ fun YourAndroidScreen() {
                                     )
                                 }
                             }
-                            3 -> {
+                            "FLASHLIGHT_PULSE" -> {
                                 // Flashlight Pulse Bubble
                                 val pulseEnabled = flashlightPulseEnabledState.value
                                 val pulseColors = if (pulseEnabled) {
@@ -373,7 +378,7 @@ fun YourAndroidScreen() {
                                     )
                                 }
                             }
-                            4 -> {
+                            "AOD" -> {
                                 // AOD Bubble
                                 val aodState = aodStateState.value
                                 val aodEnabled = aodState == 1 || aodState == 2

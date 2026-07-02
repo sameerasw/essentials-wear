@@ -235,6 +235,8 @@ class CalendarDataListenerService : WearableListenerService() {
                 }
             }
             sendStatusUpdateToPhone(this)
+        } else if (messageEvent.path == "/request_watch_status") {
+            sendStatusUpdateToPhone(this)
         }
     }
 

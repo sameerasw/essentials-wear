@@ -16,6 +16,7 @@ fun EssentialsScreen(
     modifier: Modifier = Modifier,
     state: ScalingLazyListState = rememberScalingLazyListState(),
     userScrollEnabled: Boolean = true,
+    autoCentering: AutoCenteringParams? = AutoCenteringParams(itemIndex = 0),
     content: ScalingLazyListScope.() -> Unit
 ) {
     Scaffold(
@@ -24,7 +25,7 @@ fun EssentialsScreen(
         ScalingLazyColumn(
             modifier = modifier.fillMaxSize(),
             state = state,
-            autoCentering = AutoCenteringParams(itemIndex = 0),
+            autoCentering = autoCentering,
             userScrollEnabled = userScrollEnabled,
             content = content
         )

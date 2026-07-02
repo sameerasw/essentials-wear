@@ -80,6 +80,8 @@ class CalendarDataListenerService : WearableListenerService() {
                 val travelRemainingDistance = dataMap.getString("travel_remaining_distance", "") ?: ""
                 val travelIconName = dataMap.getString("travel_icon_name", "") ?: ""
                 val travelIsPaused = dataMap.getBoolean("travel_is_paused", false)
+                val flashlightPulseEnabled = dataMap.getBoolean("flashlight_pulse_enabled", false)
+                val aodState = dataMap.getInt("aod_state", 0)
 
                 saveDeviceInfo(
                     batteryLevel, 
@@ -96,7 +98,9 @@ class CalendarDataListenerService : WearableListenerService() {
                     travelRemainingTime,
                     travelRemainingDistance,
                     travelIconName,
-                    travelIsPaused
+                    travelIsPaused,
+                    flashlightPulseEnabled,
+                    aodState
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
@@ -131,7 +135,9 @@ class CalendarDataListenerService : WearableListenerService() {
         travelRemainingTime: String,
         travelRemainingDistance: String,
         travelIconName: String,
-        travelIsPaused: Boolean
+        travelIsPaused: Boolean,
+        flashlightPulseEnabled: Boolean,
+        aodState: Int
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -150,6 +156,8 @@ class CalendarDataListenerService : WearableListenerService() {
             .putString("phone_travel_remaining_distance", travelRemainingDistance)
             .putString("phone_travel_icon_name", travelIconName)
             .putBoolean("phone_travel_is_paused", travelIsPaused)
+            .putBoolean("phone_flashlight_pulse_enabled", flashlightPulseEnabled)
+            .putInt("phone_aod_state", aodState)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

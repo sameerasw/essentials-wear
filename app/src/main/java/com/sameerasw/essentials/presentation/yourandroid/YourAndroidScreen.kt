@@ -67,6 +67,8 @@ fun YourAndroidScreen() {
     val flashlightIntensitySupportedState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_intensity_supported", false)) }
     val ringerModeState = remember { mutableStateOf(prefs.getInt("phone_ringer_mode", 2)) }
     val deviceNameState = remember { mutableStateOf(prefs.getString("phone_device_name", "")) }
+    val flashlightPulseEnabledState = remember { mutableStateOf(prefs.getBoolean("phone_flashlight_pulse_enabled", false)) }
+    val aodStateState = remember { mutableStateOf(prefs.getInt("phone_aod_state", 0)) }
 
     // Local brightness for smooth crown adjustment
     var localFlashlightLevel by remember { mutableStateOf(flashlightLevelState.value.toFloat()) }
@@ -102,6 +104,8 @@ fun YourAndroidScreen() {
                     "phone_flashlight_intensity_supported" -> flashlightIntensitySupportedState.value = p.getBoolean(key, false)
                     "phone_ringer_mode" -> ringerModeState.value = p.getInt(key, 2)
                     "phone_device_name" -> deviceNameState.value = p.getString(key, "")
+                    "phone_flashlight_pulse_enabled" -> flashlightPulseEnabledState.value = p.getBoolean(key, false)
+                    "phone_aod_state" -> aodStateState.value = p.getInt(key, 0)
                 }
             }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -151,6 +155,19 @@ fun YourAndroidScreen() {
         focusRequester.requestFocus()
     }
 
+    val totalButtons = 5
+    val rows = remember {
+        val result = mutableListOf<List<Int>>()
+        var index = 0
+        var size = 3
+        while (index < totalButtons) {
+            result.add((index until minOf(index + size, totalButtons)).toList())
+            index += size
+            size = if (size == 3) 2 else 3
+        }
+        result
+    }
+
     EssentialsScreen(
         userScrollEnabled = !flashlightOnState.value,
         modifier = Modifier
@@ -174,137 +191,232 @@ fun YourAndroidScreen() {
             .focusable()
     ) {
         val isDeviceFound = !deviceNameState.value.isNullOrBlank()
-        
+
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Lock Bubble
-                Button(
-                    onClick = {
-                        HapticUtil.performUIHaptic(view)
-                        sendMessage("/lock_device")
-                    },
-                    modifier = Modifier
-                        .size(52.dp)
-                        .border(
-                            BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
-                            CircleShape
-                        ),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.Transparent,
-                        contentColor = Color.White
-                    ),
-                    shape = CircleShape,
-                    enabled = isDeviceFound
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.rounded_lock_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
+            EssentialsTitle(
+                text = stringResource(R.string.feature_your_android),
+                color = lightAccentColor
+            )
+        }
 
-                // Flashlight Bubble
-                val flashlightOn = flashlightOnState.value
-                val flashlightLevel = localFlashlightLevel
-                val maxLevel = flashlightMaxLevelState.value
-                val intensitySupported = flashlightIntensitySupportedState.value
-                
-                val buttonColors = if (flashlightOn) {
-                    bubbleColors // Filled accent
-                } else {
-                    ButtonDefaults.buttonColors(
-                        backgroundColor = Color.Transparent,
-                        contentColor = Color.White
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        HapticUtil.performUIHaptic(view)
-                        sendMessage("/toggle_flashlight")
-                    },
+        for (rowIndices in rows) {
+            item {
+                Row(
                     modifier = Modifier
-                        .size(52.dp)
-                        .then(
-                            if (!flashlightOn) Modifier.border(
-                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
-                                CircleShape
-                            ) else Modifier
-                        ),
-                    colors = buttonColors,
-                    shape = CircleShape,
-                    enabled = isDeviceFound
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        // Inset black ring inside button
-                        if (flashlightOn && intensitySupported) {
-                            CircularProgressIndicator(
-                                progress = flashlightLevel / maxOf(1f, maxLevel.toFloat()),
-                                modifier = Modifier.size(52.dp),
-                                strokeWidth = 3.dp,
-                                indicatorColor = Color.Black.copy(alpha = 0.35f),
-                                trackColor = Color.Transparent
-                            )
+                    for (idx in rowIndices) {
+                        when (idx) {
+                            0 -> {
+                                // Lock Bubble
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/lock_device")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .border(
+                                            BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                            CircleShape
+                                        ),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.rounded_lock_24),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            1 -> {
+                                // Flashlight Bubble
+                                val flashlightOn = flashlightOnState.value
+                                val flashlightLevel = localFlashlightLevel
+                                val maxLevel = flashlightMaxLevelState.value
+                                val intensitySupported = flashlightIntensitySupportedState.value
+                                
+                                val buttonColors = if (flashlightOn) {
+                                    bubbleColors // Filled accent
+                                } else {
+                                    ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/toggle_flashlight")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .then(
+                                            if (!flashlightOn) Modifier.border(
+                                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                                CircleShape
+                                            ) else Modifier
+                                        ),
+                                    colors = buttonColors,
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        // Inset black ring inside button
+                                        if (flashlightOn && intensitySupported) {
+                                            CircularProgressIndicator(
+                                                progress = flashlightLevel / maxOf(1f, maxLevel.toFloat()),
+                                                modifier = Modifier.size(52.dp),
+                                                strokeWidth = 3.dp,
+                                                indicatorColor = Color.Black.copy(alpha = 0.35f),
+                                                trackColor = Color.Transparent
+                                            )
+                                        }
+                                        
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                painter = painterResource(id = if (flashlightOn) R.drawable.round_flashlight_on_24 else R.drawable.rounded_flashlight_on_24),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            2 -> {
+                                // Sound Mode Bubble
+                                val ringerMode = ringerModeState.value
+                                val isNormal = ringerMode == 2 // AudioManager.RINGER_MODE_NORMAL
+                                
+                                val soundModeColors = if (!isNormal) {
+                                    bubbleColors // Filled for Vibrate/Silent
+                                } else {
+                                    ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/toggle_sound_mode")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .then(
+                                            if (isNormal) Modifier.border(
+                                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                                CircleShape
+                                            ) else Modifier
+                                        ),
+                                    colors = soundModeColors,
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    val soundIcon = when (ringerMode) {
+                                        1 -> R.drawable.rounded_mobile_vibrate_24
+                                        0 -> R.drawable.rounded_volume_off_24
+                                        else -> R.drawable.rounded_volume_up_24
+                                    }
+                                    Icon(
+                                        painter = painterResource(id = soundIcon),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            3 -> {
+                                // Flashlight Pulse Bubble
+                                val pulseEnabled = flashlightPulseEnabledState.value
+                                val pulseColors = if (pulseEnabled) {
+                                    bubbleColors // Filled accent
+                                } else {
+                                    ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/toggle_flashlight_pulse")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .then(
+                                            if (!pulseEnabled) Modifier.border(
+                                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                                CircleShape
+                                            ) else Modifier
+                                        ),
+                                    colors = pulseColors,
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.outline_backlight_high_24),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            4 -> {
+                                // AOD Bubble
+                                val aodState = aodStateState.value
+                                val aodEnabled = aodState == 1 || aodState == 2
+                                val aodColors = if (aodEnabled) {
+                                    bubbleColors // Filled accent
+                                } else {
+                                    ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        HapticUtil.performUIHaptic(view)
+                                        sendMessage("/toggle_aod")
+                                    },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .then(
+                                            if (!aodEnabled) Modifier.border(
+                                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
+                                                CircleShape
+                                            ) else Modifier
+                                        ),
+                                    colors = aodColors,
+                                    shape = CircleShape,
+                                    enabled = isDeviceFound
+                                ) {
+                                    val aodIcon = when (aodState) {
+                                        2 -> R.drawable.outline_mobile_chat_24
+                                        1 -> R.drawable.rounded_mobile_text_2_24
+                                        else -> R.drawable.rounded_mobile_off_24
+                                    }
+                                    Icon(
+                                        painter = painterResource(id = aodIcon),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
                         }
-                        
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                painter = painterResource(id = if (flashlightOn) R.drawable.round_flashlight_on_24 else R.drawable.rounded_flashlight_on_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
                     }
-                }
-
-                // Sound Mode Bubble
-                val ringerMode = ringerModeState.value
-                val isNormal = ringerMode == 2 // AudioManager.RINGER_MODE_NORMAL
-                
-                val soundModeColors = if (!isNormal) {
-                    bubbleColors // Filled for Vibrate/Silent
-                } else {
-                    ButtonDefaults.buttonColors(
-                        backgroundColor = Color.Transparent,
-                        contentColor = Color.White
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        HapticUtil.performUIHaptic(view)
-                        sendMessage("/toggle_sound_mode")
-                    },
-                    modifier = Modifier
-                        .size(52.dp)
-                        .then(
-                            if (isNormal) Modifier.border(
-                                BorderStroke(1.dp, lightAccentColor.copy(alpha = 0.5f)),
-                                CircleShape
-                            ) else Modifier
-                        ),
-                    colors = soundModeColors,
-                    shape = CircleShape,
-                    enabled = isDeviceFound
-                ) {
-                    val soundIcon = when (ringerMode) {
-                        1 -> R.drawable.rounded_mobile_vibrate_24
-                        0 -> R.drawable.rounded_volume_off_24
-                        else -> R.drawable.rounded_volume_up_24
-                    }
-                    Icon(
-                        painter = painterResource(id = soundIcon),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
                 }
             }
         }

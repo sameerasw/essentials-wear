@@ -36,7 +36,7 @@ fun EssentialsTimeText(
 
     val showDetails by remember(scrollState) {
         derivedStateOf {
-            scrollState == null || (scrollState.centerItemIndex <= 1 && scrollState.centerItemScrollOffset <= 500)
+            scrollState == null || (scrollState.centerItemIndex == 0 && scrollState.centerItemScrollOffset <= 100)
         }
     }
 

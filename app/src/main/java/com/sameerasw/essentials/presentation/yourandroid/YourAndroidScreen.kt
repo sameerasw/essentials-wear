@@ -131,33 +131,6 @@ fun YourAndroidScreen() {
         }
     }
 
-    // Sync watch ringer mode changes back to the phone if enabled
-    DisposableEffect(Unit) {
-        val receiver = object : android.content.BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action == android.media.AudioManager.RINGER_MODE_CHANGED_ACTION) {
-                    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
-                    val currentMode = audioManager.ringerMode
-                    
-                    val syncEnabled = prefs.getBoolean("phone_watch_sync_sound_mode_enabled", false)
-                    if (syncEnabled) {
-                        val phoneMode = when (currentMode) {
-                            android.media.AudioManager.RINGER_MODE_NORMAL -> 2 // Sound
-                            android.media.AudioManager.RINGER_MODE_VIBRATE -> 1 // Vibrate
-                            android.media.AudioManager.RINGER_MODE_SILENT -> 0 // Silent
-                            else -> 2
-                        }
-                        sendMessage("/set_phone_ringer_mode", byteArrayOf(phoneMode.toByte()))
-                    }
-                }
-            }
-        }
-        context.registerReceiver(receiver, IntentFilter(android.media.AudioManager.RINGER_MODE_CHANGED_ACTION))
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
-    }
-
     // Sync brightness to phone with debouncing
     LaunchedEffect(localFlashlightLevel) {
         if (flashlightOnState.value && flashlightIntensitySupportedState.value) {

@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sameerasw.essentials"
-        minSdk = 35
+        minSdk = 34
         targetSdk = 36
         versionCode = 4
         versionName = "4.0"

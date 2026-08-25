@@ -66,6 +66,14 @@ class CalendarDataListenerService : WearableListenerService() {
                         .create(this, componentName)
                         .requestUpdateAll()
 
+                    val glanceCompName = ComponentName(
+                        this,
+                        "com.sameerasw.essentials.complication.GlanceComplicationService"
+                    )
+                    ComplicationDataSourceUpdateRequester
+                        .create(this, glanceCompName)
+                        .requestUpdateAll()
+
                     // Trigger Watch Face Redraw
                     sendBroadcast(Intent("com.sameerasw.essentials.WATCHFACE_PREFS_CHANGED").apply {
                         setPackage(packageName)
@@ -179,6 +187,14 @@ class CalendarDataListenerService : WearableListenerService() {
                 )
                 ComplicationDataSourceUpdateRequester
                     .create(this, phoneBatteryCompName)
+                    .requestUpdateAll()
+
+                val glanceCompName = ComponentName(
+                    this,
+                    "com.sameerasw.essentials.complication.GlanceComplicationService"
+                )
+                ComplicationDataSourceUpdateRequester
+                    .create(this, glanceCompName)
                     .requestUpdateAll()
 
                 // Trigger Phone Battery Tile Update

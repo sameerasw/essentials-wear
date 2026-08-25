@@ -173,6 +173,14 @@ class CalendarDataListenerService : WearableListenerService() {
                     .create(this, batteryCompName)
                     .requestUpdateAll()
 
+                val phoneBatteryCompName = ComponentName(
+                    this,
+                    "com.sameerasw.essentials.complication.PhoneBatteryComplicationService"
+                )
+                ComplicationDataSourceUpdateRequester
+                    .create(this, phoneBatteryCompName)
+                    .requestUpdateAll()
+
                 // Trigger Phone Battery Tile Update
                 TileService.getUpdater(this)
                     .requestUpdate(PhoneBatteryTileService::class.java)

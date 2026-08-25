@@ -13,6 +13,8 @@
     <string name="feature_tools">Tools</string>
     <string name="coming_soon">Coming Soon</string>
     <string name="phone_battery">Phone Battery</string>
+    <string name="phone_battery_short">Phone</string>
+    <string name="phone_battery_complication_label">Phone Battery</string>
     <string name="dual_battery_complication_label">Dual Battery Status</string>
     <string name="time_day_complication_label">Time &amp; Day</string>
     <string name="battery_level">%1$d%%</string>

@@ -41,6 +41,7 @@ import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.rendering.CanvasComplicationDrawable
 import androidx.wear.watchface.complications.rendering.ComplicationDrawable
 import androidx.wear.watchface.style.CurrentUserStyleRepository
+import com.google.android.gms.wearable.Wearable
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.utils.HapticUtil
 import com.sameerasw.essentials.utils.ThemeUtil
@@ -166,6 +167,7 @@ class EssentialsWatchFaceService : WatchFaceService() {
 }
 
 private enum class GlanceType {
+    FLASHLIGHT,
     BATTERY_ALERT,
     TRAVEL,
     EVENT,
@@ -527,6 +529,7 @@ class EssentialsCanvasRenderer(
             if (topInfo != null) {
                 HapticUtil.performClick(context)
                 when (topInfo.type) {
+                    GlanceType.FLASHLIGHT -> togglePhoneFlashlight()
                     GlanceType.EVENT -> openScheduleScreen()
                     GlanceType.ALARM -> openAlarmApp()
                     GlanceType.TRAVEL, GlanceType.BATTERY_ALERT -> openYourAndroidScreen()
@@ -569,6 +572,18 @@ class EssentialsCanvasRenderer(
                 HapticUtil.performClick(context)
             }
         }
+    }
+
+    private fun togglePhoneFlashlight() {
+        try {
+            val nodeClient = Wearable.getNodeClient(context)
+            nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+                val messageClient = Wearable.getMessageClient(context)
+                for (node in nodes) {
+                    messageClient.sendMessage(node.id, "/toggle_flashlight", byteArrayOf())
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private fun openHealthApp() {
@@ -1020,10 +1035,26 @@ class EssentialsCanvasRenderer(
         val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
 
         // Individual At a Glance complication toggles
+        val showFlashlight = prefs.getBoolean("watchface_glance_flashlight", true)
         val showBatteryAlerts = prefs.getBoolean("watchface_glance_battery_alerts", true)
         val showTravel = prefs.getBoolean("watchface_glance_travel", true)
         val showEvents = prefs.getBoolean("watchface_glance_events", true)
         val showAlarm = prefs.getBoolean("watchface_glance_alarm", true)
+
+        // 0. Flashlight on phone takes highest priority
+        if (showFlashlight) {
+            val flashlightOn = prefs.getBoolean("phone_flashlight_on", false)
+            if (flashlightOn) {
+                return TopScheduleInfo(
+                    GlanceType.FLASHLIGHT,
+                    "Flashlight on",
+                    flashlightIconDrawable,
+                    remainingMinutes = 0L,
+                    glowMaxMinutes = 60L,
+                    glowPeakMinutes = 0L
+                )
+            }
+        }
 
         // 1. Check for upcoming calendar event starting within 30 minutes
         var earlyUpcomingMeeting: TopScheduleInfo? = null

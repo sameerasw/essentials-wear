@@ -65,6 +65,11 @@ class CalendarDataListenerService : WearableListenerService() {
                     ComplicationDataSourceUpdateRequester
                         .create(this, componentName)
                         .requestUpdateAll()
+
+                    // Trigger Watch Face Redraw
+                    sendBroadcast(Intent("com.sameerasw.essentials.WATCHFACE_PREFS_CHANGED").apply {
+                        setPackage(packageName)
+                    })
                 }
             } else if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == DEVICE_INFO_PATH) {
                 Log.d(TAG, "Received device info update")

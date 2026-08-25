@@ -642,15 +642,46 @@ class EssentialsCanvasRenderer(
         }
         activePaint.textSize = baseTextSize
 
+        // Clock font variation settings for Interactive vs AOD (Ambient) modes
         when (clockFont) {
             "FLEX" -> {
-                activePaint.fontVariationSettings = if (isAmbient) "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0" else "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+                // Flex font axes: ROND (0..100), wdth (25..151), wght (1..1000)
+                activePaint.fontVariationSettings = if (isAmbient) {
+                    "'ROND' 100.0, 'wdth' 125.0, 'wght' 25.0"
+                } else {
+                    "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+                }
             }
-            "GROWTH", "INFLATE", "ROTATION" -> {
-                activePaint.fontVariationSettings = if (isAmbient) "'wght' 25.0" else "'wght' 600.0"
+            "GROWTH" -> {
+                // Growth font axis: wght (1..1000)
+                activePaint.fontVariationSettings = if (isAmbient) {
+                    "'wght' 25.0"
+                } else {
+                    "'wght' 600.0"
+                }
+            }
+            "INFLATE" -> {
+                // Inflate font axis: wght (1..1000)
+                activePaint.fontVariationSettings = if (isAmbient) {
+                    "'wght' 25.0"
+                } else {
+                    "'wght' 600.0"
+                }
+            }
+            "ROTATION" -> {
+                // Rotation font axis: wght (1..1000)
+                activePaint.fontVariationSettings = if (isAmbient) {
+                    "'wght' 25.0"
+                } else {
+                    "'wght' 600.0"
+                }
             }
             else -> {
-                activePaint.fontVariationSettings = if (isAmbient) "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0" else "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+                activePaint.fontVariationSettings = if (isAmbient) {
+                    "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0"
+                } else {
+                    "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+                }
             }
         }
 

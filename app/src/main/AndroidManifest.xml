@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="com.google.android.wearable.permission.RECEIVE_COMPLICATION_DATA" />
+    <uses-permission android:name="com.google.android.wearable.permission.RECEIVE_COMPLICATION_DATA_PRIVILEGED" />
 
     <queries>
         <intent>
@@ -185,6 +187,18 @@
                 android:resource="@xml/accessibility_config" />
         </service>
 
+        <activity
+            android:name=".watchface.EssentialsWatchFaceConfigActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault">
+            <intent-filter>
+                <action android:name="androidx.wear.watchface.editor.action.WATCH_FACE_EDITOR" />
+                <action android:name="com.google.android.wearable.watchface.wearableConfigurationAction" />
+                <category android:name="com.google.android.wearable.watchface.category.WEARABLE_CONFIGURATION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".watchface.EssentialsWatchFaceService"
             android:exported="true"
@@ -203,6 +217,12 @@
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview_circular"
                 android:resource="@drawable/watch_face_preview" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.wearableConfigurationAction"
+                android:value="androidx.wear.watchface.editor.action.WATCH_FACE_EDITOR" />
+            <meta-data
+                android:name="androidx.wear.watchface.editor.action.WATCH_FACE_EDITOR"
+                android:value="androidx.wear.watchface.editor.action.WATCH_FACE_EDITOR" />
         </service>
     </application>
 

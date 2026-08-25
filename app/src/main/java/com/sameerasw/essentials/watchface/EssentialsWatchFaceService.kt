@@ -25,6 +25,7 @@ import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.wear.watchface.CanvasType
+import androidx.wear.watchface.ComplicationSlot
 import androidx.wear.watchface.ComplicationSlotsManager
 import androidx.wear.watchface.DrawMode
 import androidx.wear.watchface.Renderer
@@ -34,6 +35,11 @@ import androidx.wear.watchface.WatchFace
 import androidx.wear.watchface.WatchFaceService
 import androidx.wear.watchface.WatchFaceType
 import androidx.wear.watchface.WatchState
+import androidx.wear.watchface.complications.ComplicationSlotBounds
+import androidx.wear.watchface.complications.DefaultComplicationDataSourcePolicy
+import androidx.wear.watchface.complications.data.ComplicationType
+import androidx.wear.watchface.complications.rendering.CanvasComplicationDrawable
+import androidx.wear.watchface.complications.rendering.ComplicationDrawable
 import androidx.wear.watchface.style.CurrentUserStyleRepository
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.utils.HapticUtil
@@ -51,6 +57,60 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class EssentialsWatchFaceService : WatchFaceService() {
+
+    companion object {
+        const val LEFT_COMPLICATION_ID = 100
+        const val RIGHT_COMPLICATION_ID = 101
+    }
+
+    override fun createComplicationSlotsManager(
+        currentUserStyleRepository: CurrentUserStyleRepository
+    ): ComplicationSlotsManager {
+        val canvasComplicationFactory = androidx.wear.watchface.CanvasComplicationFactory { watchState, listener ->
+            val complicationDrawable = ComplicationDrawable(applicationContext)
+            CanvasComplicationDrawable(
+                complicationDrawable,
+                watchState,
+                listener
+            )
+        }
+
+        val supportedTypes = listOf(
+            ComplicationType.SHORT_TEXT,
+            ComplicationType.RANGED_VALUE,
+            ComplicationType.MONOCHROMATIC_IMAGE,
+            ComplicationType.SMALL_IMAGE
+        )
+
+        // Left slot: centered at (0.13, 0.50) with size 0.26 x 0.26 (bounds: 0.00f, 0.37f, 0.26f, 0.63f)
+        val leftComplicationSlot = ComplicationSlot.createRoundRectComplicationSlotBuilder(
+            id = LEFT_COMPLICATION_ID,
+            canvasComplicationFactory = canvasComplicationFactory,
+            supportedTypes = supportedTypes,
+            defaultDataSourcePolicy = DefaultComplicationDataSourcePolicy(),
+            bounds = ComplicationSlotBounds(
+                RectF(0.00f, 0.37f, 0.26f, 0.63f)
+            )
+        ).setNameResourceId(R.string.left_complication_label)
+            .build()
+
+        // Right slot: centered at (0.87, 0.50) with size 0.26 x 0.26 (bounds: 0.74f, 0.37f, 1.00f, 0.63f)
+        val rightComplicationSlot = ComplicationSlot.createRoundRectComplicationSlotBuilder(
+            id = RIGHT_COMPLICATION_ID,
+            canvasComplicationFactory = canvasComplicationFactory,
+            supportedTypes = supportedTypes,
+            defaultDataSourcePolicy = DefaultComplicationDataSourcePolicy(),
+            bounds = ComplicationSlotBounds(
+                RectF(0.74f, 0.37f, 1.00f, 0.63f)
+            )
+        ).setNameResourceId(R.string.right_complication_label)
+            .build()
+
+        return ComplicationSlotsManager(
+            listOf(leftComplicationSlot, rightComplicationSlot),
+            currentUserStyleRepository
+        )
+    }
 
     override suspend fun createWatchFace(
         surfaceHolder: SurfaceHolder,
@@ -915,6 +975,16 @@ class EssentialsCanvasRenderer(
             activePaint.color = defaultClockColor
             canvas.drawText(hourText, centerX, hourY, activePaint)
             canvas.drawText(minuteText, centerX, minuteY, activePaint)
+        }
+
+        // Draw system complication slots (rendered in ambient only if enabled)
+        val showComplicationsOnAod = sharedPrefs?.getBoolean("watchface_complications_on_aod", true) ?: true
+        if (!isAmbient || showComplicationsOnAod) {
+            for ((_, complication) in complicationSlotsManager.complicationSlots) {
+                if (complication.enabled) {
+                    complication.render(canvas, zonedDateTime, renderParameters)
+                }
+            }
         }
     }
 

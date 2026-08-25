@@ -40,4 +40,11 @@
     <string name="call_action_mute">Mute</string>
     <string name="no_alarms">No Alarms</string>
     <string name="watch_face_name">Essentials</string>
+    <string name="left_complication_label">Left Complication</string>
+    <string name="right_complication_label">Right Complication</string>
+    <string name="action_done">Done</string>
+    <string name="watchface_complications_on_aod_title">Show on AOD</string>
+    <string name="watchface_complications_on_aod_desc">Complications on AOD</string>
+    <string name="editor_tab_complications">Complications</string>
+    <string name="editor_tab_aod">AOD Mode</string>
 </resources>

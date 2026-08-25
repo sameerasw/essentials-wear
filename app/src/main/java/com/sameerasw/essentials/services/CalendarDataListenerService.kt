@@ -103,6 +103,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 val watchfaceHideBattery = dataMap.getBoolean("watchface_hide_battery", false)
                 val watchfaceHideDeviceIcons = dataMap.getBoolean("watchface_hide_device_icons", false)
                 val watchfaceShowComplications = dataMap.getBoolean("watchface_show_complications", true)
+                val watchfaceComplicationsOnAod = dataMap.getBoolean("watchface_complications_on_aod", true)
                 val watchfaceComplicationOutline = dataMap.getBoolean("watchface_complication_outline", true)
                 val watchfaceLeftComplication = dataMap.getString("watchface_left_complication", "HEART_RATE")
                 val watchfaceRightComplication = dataMap.getString("watchface_right_complication", "STEPS")
@@ -144,6 +145,7 @@ class CalendarDataListenerService : WearableListenerService() {
                     watchfaceHideBattery,
                     watchfaceHideDeviceIcons,
                     watchfaceShowComplications,
+                    watchfaceComplicationsOnAod,
                     watchfaceComplicationOutline,
                     watchfaceLeftComplication,
                     watchfaceRightComplication,
@@ -207,6 +209,7 @@ class CalendarDataListenerService : WearableListenerService() {
         watchfaceHideBattery: Boolean = false,
         watchfaceHideDeviceIcons: Boolean = false,
         watchfaceShowComplications: Boolean = true,
+        watchfaceComplicationsOnAod: Boolean = true,
         watchfaceComplicationOutline: Boolean = true,
         watchfaceLeftComplication: String = "HEART_RATE",
         watchfaceRightComplication: String = "STEPS",
@@ -248,6 +251,7 @@ class CalendarDataListenerService : WearableListenerService() {
             .putBoolean("watchface_hide_battery", watchfaceHideBattery)
             .putBoolean("watchface_hide_device_icons", watchfaceHideDeviceIcons)
             .putBoolean("watchface_show_complications", watchfaceShowComplications)
+            .putBoolean("watchface_complications_on_aod", watchfaceComplicationsOnAod)
             .putBoolean("watchface_complication_outline", watchfaceComplicationOutline)
             .putString("watchface_left_complication", watchfaceLeftComplication)
             .putString("watchface_right_complication", watchfaceRightComplication)

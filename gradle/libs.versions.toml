@@ -23,6 +23,8 @@ accompanist = "0.34.0"
 
 [libraries]
 wear-watchface = { group = "androidx.wear.watchface", name = "watchface", version.ref = "wearWatchface" }
+wear-watchface-complications-rendering = { group = "androidx.wear.watchface", name = "watchface-complications-rendering", version.ref = "wearWatchface" }
+wear-watchface-editor = { group = "androidx.wear.watchface", name = "watchface-editor", version.ref = "wearWatchface" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

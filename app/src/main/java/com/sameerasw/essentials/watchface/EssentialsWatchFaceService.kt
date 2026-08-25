@@ -63,11 +63,36 @@ class EssentialsWatchFaceService : WatchFaceService() {
         const val RIGHT_COMPLICATION_ID = 101
     }
 
+    private fun getClockColor(): Int {
+        val themeColor = ThemeUtil.getThemeColor(applicationContext)
+        return themeColor?.let { ThemeUtil.getLightAccentColor(it) } ?: 0xFFB39DDB.toInt()
+    }
+
+    private fun getTrackColor(): Int {
+        val themeColor = ThemeUtil.getThemeColor(applicationContext) ?: 0xFF6750A4.toInt()
+        return ThemeUtil.getTonedColor(themeColor)
+    }
+
     override fun createComplicationSlotsManager(
         currentUserStyleRepository: CurrentUserStyleRepository
     ): ComplicationSlotsManager {
         val canvasComplicationFactory = androidx.wear.watchface.CanvasComplicationFactory { watchState, listener ->
-            val complicationDrawable = ComplicationDrawable(applicationContext)
+            val complicationDrawable = ComplicationDrawable(applicationContext).apply {
+                val accentColor = getClockColor()
+                val trackColor = getTrackColor()
+                activeStyle.textColor = Color.WHITE
+                activeStyle.titleColor = Color.WHITE
+                activeStyle.iconColor = Color.WHITE
+                activeStyle.rangedValuePrimaryColor = accentColor
+                activeStyle.rangedValueSecondaryColor = trackColor
+                activeStyle.highlightColor = accentColor
+                ambientStyle.textColor = Color.WHITE
+                ambientStyle.titleColor = Color.WHITE
+                ambientStyle.iconColor = Color.WHITE
+                ambientStyle.rangedValuePrimaryColor = Color.WHITE
+                ambientStyle.rangedValueSecondaryColor = 0x66FFFFFF.toInt()
+                ambientStyle.highlightColor = Color.WHITE
+            }
             CanvasComplicationDrawable(
                 complicationDrawable,
                 watchState,
@@ -76,8 +101,10 @@ class EssentialsWatchFaceService : WatchFaceService() {
         }
 
         val supportedTypes = listOf(
-            ComplicationType.SHORT_TEXT,
+            ComplicationType.GOAL_PROGRESS,
+            ComplicationType.WEIGHTED_ELEMENTS,
             ComplicationType.RANGED_VALUE,
+            ComplicationType.SHORT_TEXT,
             ComplicationType.MONOCHROMATIC_IMAGE,
             ComplicationType.SMALL_IMAGE
         )

@@ -109,6 +109,12 @@ class CalendarDataListenerService : WearableListenerService() {
                 val watchfaceGlanceAlarm = dataMap.getBoolean("watchface_glance_alarm", true)
                 val watchfaceShowGlow = dataMap.getBoolean("watchface_show_glow", true)
 
+                val watchfaceClockFont = dataMap.getString("watchface_clock_font", "FLEX") ?: "FLEX"
+                val watchfaceClockFontSize = dataMap.getInt("watchface_clock_font_size", 100)
+                val watchfaceClockDualTone = dataMap.getBoolean("watchface_clock_dual_tone", false)
+                val watchfaceClockOutline = dataMap.getBoolean("watchface_clock_outline", false)
+                val watchfaceClockOutlineThickness = dataMap.getInt("watchface_clock_outline_thickness", 2)
+
                 saveDeviceInfo(
                     batteryLevel, 
                     isCharging, 
@@ -142,7 +148,12 @@ class CalendarDataListenerService : WearableListenerService() {
                     watchfaceGlanceBatteryAlerts,
                     watchfaceGlanceTravel,
                     watchfaceGlanceEvents,
-                    watchfaceGlanceAlarm
+                    watchfaceGlanceAlarm,
+                    watchfaceClockFont,
+                    watchfaceClockFontSize,
+                    watchfaceClockDualTone,
+                    watchfaceClockOutline,
+                    watchfaceClockOutlineThickness
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
@@ -200,7 +211,12 @@ class CalendarDataListenerService : WearableListenerService() {
         watchfaceGlanceBatteryAlerts: Boolean = true,
         watchfaceGlanceTravel: Boolean = true,
         watchfaceGlanceEvents: Boolean = true,
-        watchfaceGlanceAlarm: Boolean = true
+        watchfaceGlanceAlarm: Boolean = true,
+        watchfaceClockFont: String = "FLEX",
+        watchfaceClockFontSize: Int = 100,
+        watchfaceClockDualTone: Boolean = false,
+        watchfaceClockOutline: Boolean = false,
+        watchfaceClockOutlineThickness: Int = 2
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -237,6 +253,11 @@ class CalendarDataListenerService : WearableListenerService() {
             .putBoolean("watchface_glance_events", watchfaceGlanceEvents)
             .putBoolean("watchface_glance_alarm", watchfaceGlanceAlarm)
             .putBoolean("watchface_show_glow", watchfaceShowGlow)
+            .putString("watchface_clock_font", watchfaceClockFont)
+            .putInt("watchface_clock_font_size", watchfaceClockFontSize)
+            .putBoolean("watchface_clock_dual_tone", watchfaceClockDualTone)
+            .putBoolean("watchface_clock_outline", watchfaceClockOutline)
+            .putInt("watchface_clock_outline_thickness", watchfaceClockOutlineThickness)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

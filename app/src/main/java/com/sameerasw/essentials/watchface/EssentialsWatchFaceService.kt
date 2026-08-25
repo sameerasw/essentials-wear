@@ -131,7 +131,10 @@ class EssentialsCanvasRenderer(
     }
 
     private val calendar = Calendar.getInstance()
-    private val textPaint = Paint()
+    private val textPaintFlex = Paint()
+    private val textPaintGrowth = Paint()
+    private val textPaintInflate = Paint()
+    private val textPaintRotation = Paint()
     private val datePaint = Paint()
     private val topEventPaint = Paint()
     private val sideValuePaint = Paint()
@@ -139,7 +142,10 @@ class EssentialsCanvasRenderer(
     private val trackPaint = Paint()
     private val progressPaint = Paint()
     private val bgGradientPaint = Paint()
-    private var customTypeface: Typeface? = null
+    private var typefaceFlex: Typeface? = null
+    private var typefaceGrowth: Typeface? = null
+    private var typefaceInflate: Typeface? = null
+    private var typefaceRotation: Typeface? = null
 
     private var watchIconDrawable: Drawable? = null
     private var mobileIconDrawable: Drawable? = null
@@ -167,22 +173,61 @@ class EssentialsCanvasRenderer(
 
     init {
         try {
-            customTypeface = ResourcesCompat.getFont(context, R.font.google_sans_flex)
+            typefaceFlex = ResourcesCompat.getFont(context, R.font.google_sans_flex)
         } catch (_: Exception) {
-            customTypeface = Typeface.DEFAULT
+            typefaceFlex = Typeface.DEFAULT
+        }
+        try {
+            typefaceGrowth = ResourcesCompat.getFont(context, R.font.growth)
+        } catch (_: Exception) {
+            typefaceGrowth = Typeface.DEFAULT
+        }
+        try {
+            typefaceInflate = ResourcesCompat.getFont(context, R.font.inflate_vf)
+        } catch (_: Exception) {
+            typefaceInflate = Typeface.DEFAULT
+        }
+        try {
+            typefaceRotation = ResourcesCompat.getFont(context, R.font.rotation_gx)
+        } catch (_: Exception) {
+            typefaceRotation = Typeface.DEFAULT
         }
 
-        textPaint.apply {
+        textPaintFlex.apply {
             color = getClockColor()
-            typeface = customTypeface ?: Typeface.DEFAULT
+            typeface = typefaceFlex ?: Typeface.DEFAULT
             fontVariationSettings = "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+        }
+
+        textPaintGrowth.apply {
+            color = getClockColor()
+            typeface = typefaceGrowth ?: Typeface.DEFAULT
+            fontVariationSettings = "'wght' 600.0"
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+        }
+
+        textPaintInflate.apply {
+            color = getClockColor()
+            typeface = typefaceInflate ?: Typeface.DEFAULT
+            fontVariationSettings = "'wght' 600.0"
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+        }
+
+        textPaintRotation.apply {
+            color = getClockColor()
+            typeface = typefaceRotation ?: Typeface.DEFAULT
+            fontVariationSettings = "'wght' 600.0"
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
 
         datePaint.apply {
             color = Color.WHITE
-            typeface = customTypeface ?: Typeface.DEFAULT
+            typeface = typefaceFlex ?: Typeface.DEFAULT
             fontVariationSettings = "'ROND' 100.0, 'wdth' 100.0, 'wght' 400.0"
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
@@ -190,7 +235,7 @@ class EssentialsCanvasRenderer(
 
         topEventPaint.apply {
             color = Color.WHITE
-            typeface = customTypeface ?: Typeface.DEFAULT
+            typeface = typefaceFlex ?: Typeface.DEFAULT
             fontVariationSettings = "'ROND' 100.0, 'wdth' 100.0, 'wght' 400.0"
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
@@ -198,7 +243,7 @@ class EssentialsCanvasRenderer(
 
         sideValuePaint.apply {
             color = Color.WHITE
-            typeface = customTypeface ?: Typeface.DEFAULT
+            typeface = typefaceFlex ?: Typeface.DEFAULT
             fontVariationSettings = "'ROND' 100.0, 'wdth' 100.0, 'wght' 400.0"
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
@@ -300,7 +345,10 @@ class EssentialsCanvasRenderer(
 
     private fun updateThemeColor() {
         val color = getClockColor()
-        textPaint.color = color
+        textPaintFlex.color = color
+        textPaintGrowth.color = color
+        textPaintInflate.color = color
+        textPaintRotation.color = color
         progressPaint.color = color
         val trackColor = getTrackColor()
         trackPaint.color = trackColor
@@ -534,6 +582,12 @@ class EssentialsCanvasRenderer(
         val showUpcomingEvents = prefs?.getBoolean("watchface_show_glance", prefs?.getBoolean("watchface_show_upcoming_events", true) ?: true) ?: true
         val showGlow = prefs?.getBoolean("watchface_show_glow", true) ?: true
 
+        val clockFont = prefs?.getString("watchface_clock_font", "FLEX") ?: "FLEX"
+        val clockFontSize = prefs?.getInt("watchface_clock_font_size", 100) ?: 100
+        val clockDualTone = prefs?.getBoolean("watchface_clock_dual_tone", false) ?: false
+        val clockOutline = prefs?.getBoolean("watchface_clock_outline", false) ?: false
+        val clockOutlineThickness = prefs?.getInt("watchface_clock_outline_thickness", 2) ?: 2
+
         val topInfo = if (!isAmbient && showUpcomingEvents) getUpcomingMeetingOrAlarm() else null
 
         if (!isAmbient && showGlow && topInfo != null && topInfo.remainingMinutes != null && topInfo.remainingMinutes <= topInfo.glowMaxMinutes) {
@@ -573,11 +627,39 @@ class EssentialsCanvasRenderer(
             }
         }
 
-        textPaint.textSize = height * 0.25f
-        textPaint.fontVariationSettings = if (isAmbient) {
-            "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0"
+        val sizeScale = (clockFontSize.toFloat() / 100f).coerceIn(0.5f, 1.5f)
+        val activePaint = when (clockFont) {
+            "GROWTH" -> textPaintGrowth
+            "INFLATE" -> textPaintInflate
+            "ROTATION" -> textPaintRotation
+            else -> textPaintFlex
+        }
+        val baseTextSize = when (clockFont) {
+            "GROWTH" -> height * 0.22f * sizeScale
+            "INFLATE" -> height * 0.23f * sizeScale
+            "ROTATION" -> height * 0.23f * sizeScale
+            else -> height * 0.25f * sizeScale
+        }
+        activePaint.textSize = baseTextSize
+
+        when (clockFont) {
+            "FLEX" -> {
+                activePaint.fontVariationSettings = if (isAmbient) "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0" else "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+            }
+            "GROWTH", "INFLATE", "ROTATION" -> {
+                activePaint.fontVariationSettings = if (isAmbient) "'wght' 25.0" else "'wght' 600.0"
+            }
+            else -> {
+                activePaint.fontVariationSettings = if (isAmbient) "'ROND' 100.0, 'wdth' 150.0, 'wght' 50.0" else "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+            }
+        }
+
+        if (clockOutline) {
+            activePaint.style = Paint.Style.STROKE
+            activePaint.strokeWidth = clockOutlineThickness * height * 0.003f
         } else {
-            "'ROND' 100.0, 'wdth' 150.0, 'wght' 200.0"
+            activePaint.style = Paint.Style.FILL
+            activePaint.strokeWidth = 0f
         }
 
         if (!isAmbient) {
@@ -777,16 +859,32 @@ class EssentialsCanvasRenderer(
         }
 
         // Draw Centered Clock Text
-        val textBounds = Rect()
-        textPaint.getTextBounds("88", 0, 2, textBounds)
-        val textHeight = textBounds.height().toFloat()
+        val hourBounds = Rect()
+        val minuteBounds = Rect()
+        activePaint.getTextBounds(hourText, 0, hourText.length, hourBounds)
+        activePaint.getTextBounds(minuteText, 0, minuteText.length, minuteBounds)
 
-        val lineSpacing = 6f
-        val hourY = centerY - lineSpacing
-        val minuteY = centerY + textHeight + lineSpacing
+        val hourCapHeight = -hourBounds.top.toFloat()
+        val minuteCapHeight = -minuteBounds.top.toFloat()
+        val lineGap = height * 0.015f
 
-        canvas.drawText(hourText, centerX, hourY, textPaint)
-        canvas.drawText(minuteText, centerX, minuteY, textPaint)
+        val totalClockHeight = hourCapHeight + lineGap + minuteCapHeight
+        val clockTop = centerY - (totalClockHeight / 2f)
+
+        val hourY = clockTop + hourCapHeight
+        val minuteY = hourY + lineGap + minuteCapHeight
+
+        val defaultClockColor = getClockColor()
+        if (clockDualTone) {
+            activePaint.color = Color.WHITE
+            canvas.drawText(hourText, centerX, hourY, activePaint)
+            activePaint.color = defaultClockColor
+            canvas.drawText(minuteText, centerX, minuteY, activePaint)
+        } else {
+            activePaint.color = defaultClockColor
+            canvas.drawText(hourText, centerX, hourY, activePaint)
+            canvas.drawText(minuteText, centerX, minuteY, activePaint)
+        }
     }
 
     private fun getUpcomingMeetingOrAlarm(): TopScheduleInfo? {

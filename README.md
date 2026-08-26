@@ -102,7 +102,7 @@ Grant the optional permissions via the adb shell for enabling all the features u
 
 - DND_ACCESS
   ```
-  adb shell appops set com.sameerasw.essentials ACCESS_NOTIFICATION_POLICY allow
+  adb shell cmd notification allow_dnd com.sameerasw.essentials
   ```
 
 

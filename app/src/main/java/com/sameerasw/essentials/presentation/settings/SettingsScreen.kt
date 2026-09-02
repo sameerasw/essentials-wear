@@ -57,6 +57,22 @@ fun SettingsScreen() {
                     android.content.pm.PackageManager.PERMISSION_GRANTED
         )
     }
+    val hasBodySensorsPermission = remember {
+        mutableStateOf(
+            context.checkCallingOrSelfPermission(android.Manifest.permission.BODY_SENSORS) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val hasAccessibilityPermission = remember {
+        mutableStateOf(
+            run {
+                val serviceName = "${context.packageName}/${com.sameerasw.essentials.services.OverlayAccessibilityService::class.java.name}"
+                val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+                val isEnabled = Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+                isEnabled && enabledServices.contains(serviceName)
+            }
+        )
+    }
     val hasWriteSecureSettings = remember {
         mutableStateOf(
             context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
@@ -89,6 +105,13 @@ fun SettingsScreen() {
             hasNotificationPermission.value =
                 context.checkCallingOrSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
                         android.content.pm.PackageManager.PERMISSION_GRANTED
+            hasBodySensorsPermission.value =
+                context.checkCallingOrSelfPermission(android.Manifest.permission.BODY_SENSORS) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+            val serviceName = "${context.packageName}/${com.sameerasw.essentials.services.OverlayAccessibilityService::class.java.name}"
+            val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+            val isEnabled = Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+            hasAccessibilityPermission.value = isEnabled && enabledServices.contains(serviceName)
             hasWriteSecureSettings.value =
                 context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
                         android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -275,7 +298,7 @@ fun SettingsScreen() {
         item {
             val granted = hasNotificationPermission.value
             EssentialsChip(
-                label = "Post Alerts",
+                label = stringResource(R.string.perm_notifications_title),
                 onClick = {
                     HapticUtil.performUIHaptic(view)
                     if (!granted) {
@@ -289,6 +312,70 @@ fun SettingsScreen() {
                     }
                 },
                 icon = painterResource(R.drawable.rounded_mobile_24),
+                colors = ChipDefaults.secondaryChipColors(
+                    backgroundColor = if (granted) tonedThemeColor else tonedThemeColor.copy(alpha = 0.5f),
+                    contentColor = if (granted) Color.White else Color.White.copy(alpha = 0.6f),
+                    secondaryContentColor = if (granted) lightAccentColor else Color.White.copy(alpha = 0.4f)
+                ),
+                border = ChipDefaults.chipBorder(
+                    borderStroke = null
+                )
+            )
+        }
+
+        // Accessibility Service Permission Chip
+        item {
+            val granted = hasAccessibilityPermission.value
+            EssentialsChip(
+                label = stringResource(R.string.perm_accessibility_title),
+                onClick = {
+                    HapticUtil.performUIHaptic(view)
+                    if (!granted) {
+                        try {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            try {
+                                val intent = Intent(Settings.ACTION_SETTINGS).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                        }
+                    }
+                },
+                icon = painterResource(R.drawable.rounded_touch_app_24),
+                colors = ChipDefaults.secondaryChipColors(
+                    backgroundColor = if (granted) tonedThemeColor else tonedThemeColor.copy(alpha = 0.5f),
+                    contentColor = if (granted) Color.White else Color.White.copy(alpha = 0.6f),
+                    secondaryContentColor = if (granted) lightAccentColor else Color.White.copy(alpha = 0.4f)
+                ),
+                border = ChipDefaults.chipBorder(
+                    borderStroke = null
+                )
+            )
+        }
+
+        // Body Sensors Permission Chip
+        item {
+            val granted = hasBodySensorsPermission.value
+            EssentialsChip(
+                label = stringResource(R.string.perm_body_sensors_title),
+                onClick = {
+                    HapticUtil.performUIHaptic(view)
+                    if (!granted) {
+                        try {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.fromParts("package", context.packageName, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    }
+                },
+                icon = painterResource(R.drawable.rounded_music_note_24),
                 colors = ChipDefaults.secondaryChipColors(
                     backgroundColor = if (granted) tonedThemeColor else tonedThemeColor.copy(alpha = 0.5f),
                     contentColor = if (granted) Color.White else Color.White.copy(alpha = 0.6f),

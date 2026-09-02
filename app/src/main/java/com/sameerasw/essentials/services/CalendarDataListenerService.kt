@@ -17,6 +17,7 @@ import com.google.gson.Gson
 import com.sameerasw.essentials.R
 import com.sameerasw.essentials.tile.MainTileService
 import com.sameerasw.essentials.tile.PhoneBatteryTileService
+import com.sameerasw.essentials.utils.AdbDiscoveryHolder
 import com.sameerasw.essentials.utils.HapticUtil
 import com.sameerasw.essentials.utils.SoundUtil
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
@@ -26,6 +27,13 @@ class CalendarDataListenerService : WearableListenerService() {
         private const val TAG = "CalendarDataListener"
         private const val SYNC_PATH = "/calendar_events"
         private const val DEVICE_INFO_PATH = "/device_info"
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        try {
+            AdbDiscoveryHolder.initialize(this)
+        } catch (_: Exception) { }
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -561,11 +569,47 @@ class CalendarDataListenerService : WearableListenerService() {
         val hasPermission = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
         val isAdbWifiEnabled = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
         
-        val data = byteArrayOf(
-            if (isAdbWifiEnabled) 1 else 0,
-            if (hasPermission) 1 else 0,
-            com.sameerasw.essentials.BuildConfig.VERSION_CODE.toByte()
-        )
+        var ipAddress = ""
+        try {
+            val interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
+            for (networkInterface in interfaces) {
+                val addresses = java.util.Collections.list(networkInterface.inetAddresses)
+                for (address in addresses) {
+                    if (!address.isLoopbackAddress) {
+                        val hostAddress = address.hostAddress
+                        if (hostAddress != null && hostAddress.contains(".") && !hostAddress.contains(":")) {
+                            ipAddress = hostAddress
+                            break
+                        }
+                    }
+                }
+                if (ipAddress.isNotBlank()) break
+            }
+        } catch (_: Exception) { }
+        var adbPort = -1
+        if (isAdbWifiEnabled) {
+            try {
+                val discovered = AdbDiscoveryHolder.getDiscoveredServices()
+                val matching = discovered.firstOrNull { it.hostAddress == ipAddress } ?: discovered.firstOrNull()
+                if (matching != null && matching.port > 0) {
+                    adbPort = matching.port
+                } else {
+                    val port = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_port", -1)
+                    if (port > 0) {
+                        adbPort = port
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+
+        val jsonObj = org.json.JSONObject().apply {
+            put("adb_wifi_enabled", isAdbWifiEnabled)
+            put("write_secure_settings_granted", hasPermission)
+            put("version_code", com.sameerasw.essentials.BuildConfig.VERSION_CODE)
+            put("ip_address", ipAddress)
+            put("adb_port", adbPort)
+        }
+        val data = jsonObj.toString().toByteArray(Charsets.UTF_8)
         
         val nodeClient = com.google.android.gms.wearable.Wearable.getNodeClient(context)
         nodeClient.connectedNodes.addOnSuccessListener { nodes ->

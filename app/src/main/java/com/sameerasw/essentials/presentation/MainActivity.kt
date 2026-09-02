@@ -27,6 +27,9 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setTheme(android.R.style.Theme_DeviceDefault)
+        try {
+            com.sameerasw.essentials.utils.AdbDiscoveryHolder.initialize(this)
+        } catch (_: Exception) { }
 
         val navigateTo = intent?.getStringExtra(EXTRA_NAVIGATE_TO)
 

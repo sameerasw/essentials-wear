@@ -63,6 +63,14 @@ fun SettingsScreen() {
                     android.content.pm.PackageManager.PERMISSION_GRANTED
         )
     }
+    val hasLocationPermission = remember {
+        mutableStateOf(
+            context.checkCallingOrSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED ||
+            context.checkCallingOrSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
     val hasAccessibilityPermission = remember {
         mutableStateOf(
             run {
@@ -107,6 +115,11 @@ fun SettingsScreen() {
                         android.content.pm.PackageManager.PERMISSION_GRANTED
             hasBodySensorsPermission.value =
                 context.checkCallingOrSelfPermission(android.Manifest.permission.BODY_SENSORS) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+            hasLocationPermission.value =
+                context.checkCallingOrSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                context.checkCallingOrSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         android.content.pm.PackageManager.PERMISSION_GRANTED
             val serviceName = "${context.packageName}/${com.sameerasw.essentials.services.OverlayAccessibilityService::class.java.name}"
             val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
@@ -376,6 +389,35 @@ fun SettingsScreen() {
                     }
                 },
                 icon = painterResource(R.drawable.rounded_music_note_24),
+                colors = ChipDefaults.secondaryChipColors(
+                    backgroundColor = if (granted) tonedThemeColor else tonedThemeColor.copy(alpha = 0.5f),
+                    contentColor = if (granted) Color.White else Color.White.copy(alpha = 0.6f),
+                    secondaryContentColor = if (granted) lightAccentColor else Color.White.copy(alpha = 0.4f)
+                ),
+                border = ChipDefaults.chipBorder(
+                    borderStroke = null
+                )
+            )
+        }
+
+        // Location Permission Chip
+        item {
+            val granted = hasLocationPermission.value
+            EssentialsChip(
+                label = stringResource(R.string.perm_location_title),
+                onClick = {
+                    HapticUtil.performUIHaptic(view)
+                    if (!granted) {
+                        try {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.fromParts("package", context.packageName, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    }
+                },
+                icon = painterResource(R.drawable.rounded_distance_24),
                 colors = ChipDefaults.secondaryChipColors(
                     backgroundColor = if (granted) tonedThemeColor else tonedThemeColor.copy(alpha = 0.5f),
                     contentColor = if (granted) Color.White else Color.White.copy(alpha = 0.6f),

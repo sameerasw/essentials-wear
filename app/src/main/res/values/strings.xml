@@ -52,5 +52,6 @@
     <string name="editor_tab_aod">AOD Mode</string>
     <string name="perm_accessibility_title">Accessibility</string>
     <string name="perm_body_sensors_title">Body Sensors</string>
+    <string name="perm_location_title">Location</string>
     <string name="perm_notifications_title">Post Alerts</string>
 </resources>

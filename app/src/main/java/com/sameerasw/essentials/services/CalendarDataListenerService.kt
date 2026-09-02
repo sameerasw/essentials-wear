@@ -602,12 +602,37 @@ class CalendarDataListenerService : WearableListenerService() {
             } catch (_: Exception) { }
         }
 
+        var wifiSsid = ""
+        try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val activeNetwork = cm?.activeNetwork
+                val capabilities = cm?.getNetworkCapabilities(activeNetwork)
+                val transportInfo = capabilities?.transportInfo
+                if (transportInfo is android.net.wifi.WifiInfo) {
+                    val raw = transportInfo.ssid
+                    if (!raw.isNullOrBlank() && raw != "<unknown ssid>") {
+                        wifiSsid = raw.removePrefix("\"").removeSuffix("\"")
+                    }
+                }
+            }
+            if (wifiSsid.isBlank()) {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+                val wifiInfo = wifiManager?.connectionInfo
+                val rawSsid = wifiInfo?.ssid
+                if (!rawSsid.isNullOrBlank() && rawSsid != "<unknown ssid>") {
+                    wifiSsid = rawSsid.removePrefix("\"").removeSuffix("\"")
+                }
+            }
+        } catch (_: Exception) { }
+
         val jsonObj = org.json.JSONObject().apply {
             put("adb_wifi_enabled", isAdbWifiEnabled)
             put("write_secure_settings_granted", hasPermission)
             put("version_code", com.sameerasw.essentials.BuildConfig.VERSION_CODE)
             put("ip_address", ipAddress)
             put("adb_port", adbPort)
+            put("wifi_ssid", wifiSsid)
         }
         val data = jsonObj.toString().toByteArray(Charsets.UTF_8)
         

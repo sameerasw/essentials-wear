@@ -44,7 +44,7 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
 
     private data class GlanceInfo(
         val type: GlanceType,
-        val title: String,
+        val title: String?,
         val text: String,
         val iconRes: Int,
         val remainingMinutes: Long? = null,
@@ -122,7 +122,8 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
         val info = calculateGlanceInfo()
         val icon = Icon.createWithResource(this, info.iconRes)
         val monochromaticImage = MonochromaticImage.Builder(icon).build()
-        val contentDesc = PlainComplicationText.Builder("${info.title} ${info.text}").build()
+        val contentDescStr = if (info.title.isNullOrBlank()) info.text else "${info.title} ${info.text}"
+        val contentDesc = PlainComplicationText.Builder(contentDescStr).build()
 
         val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
         val showGlow = prefs.getBoolean("watchface_show_glow", true)
@@ -144,49 +145,57 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
 
         return when (request.complicationType) {
             ComplicationType.SHORT_TEXT -> {
-                ShortTextComplicationData.Builder(
+                val builder = ShortTextComplicationData.Builder(
                     text = PlainComplicationText.Builder(info.text).build(),
                     contentDescription = contentDesc
                 )
-                .setTitle(PlainComplicationText.Builder(info.title).build())
-                .setMonochromaticImage(monochromaticImage)
-                .setTapAction(info.tapAction)
-                .build()
+                if (info.title != null) {
+                    builder.setTitle(PlainComplicationText.Builder(info.title).build())
+                }
+                builder.setMonochromaticImage(monochromaticImage)
+                    .setTapAction(info.tapAction)
+                    .build()
             }
             ComplicationType.LONG_TEXT -> {
-                LongTextComplicationData.Builder(
+                val builder = LongTextComplicationData.Builder(
                     text = PlainComplicationText.Builder(info.text).build(),
                     contentDescription = contentDesc
                 )
-                .setTitle(PlainComplicationText.Builder(info.title).build())
-                .setMonochromaticImage(monochromaticImage)
-                .setTapAction(info.tapAction)
-                .build()
+                if (info.title != null) {
+                    builder.setTitle(PlainComplicationText.Builder(info.title).build())
+                }
+                builder.setMonochromaticImage(monochromaticImage)
+                    .setTapAction(info.tapAction)
+                    .build()
             }
             ComplicationType.RANGED_VALUE -> {
-                RangedValueComplicationData.Builder(
+                val builder = RangedValueComplicationData.Builder(
                     value = glowProgressPercent,
                     min = 0f,
                     max = 100f,
                     contentDescription = contentDesc
                 )
                 .setText(PlainComplicationText.Builder(info.text).build())
-                .setTitle(PlainComplicationText.Builder(info.title).build())
-                .setMonochromaticImage(monochromaticImage)
-                .setTapAction(info.tapAction)
-                .build()
+                if (info.title != null) {
+                    builder.setTitle(PlainComplicationText.Builder(info.title).build())
+                }
+                builder.setMonochromaticImage(monochromaticImage)
+                    .setTapAction(info.tapAction)
+                    .build()
             }
             ComplicationType.GOAL_PROGRESS -> {
-                GoalProgressComplicationData.Builder(
+                val builder = GoalProgressComplicationData.Builder(
                     value = glowProgressPercent,
                     targetValue = 100f,
                     contentDescription = contentDesc
                 )
                 .setText(PlainComplicationText.Builder(info.text).build())
-                .setTitle(PlainComplicationText.Builder(info.title).build())
-                .setMonochromaticImage(monochromaticImage)
-                .setTapAction(info.tapAction)
-                .build()
+                if (info.title != null) {
+                    builder.setTitle(PlainComplicationText.Builder(info.title).build())
+                }
+                builder.setMonochromaticImage(monochromaticImage)
+                    .setTapAction(info.tapAction)
+                    .build()
             }
             ComplicationType.SMALL_IMAGE -> {
                 SmallImageComplicationData.Builder(
@@ -330,8 +339,8 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
             if (watchLow && phoneLow) {
                 return GlanceInfo(
                     type = GlanceType.BATTERY_ALERT,
-                    title = "Battery",
-                    text = "Watch & Phone Low",
+                    title = null,
+                    text = getString(R.string.battery_alert_watch_phone_low),
                     iconRes = R.drawable.rounded_battery_android_alert_24,
                     remainingMinutes = 0L,
                     glowMaxMinutes = 60L,
@@ -341,8 +350,8 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
             } else if (watchLow) {
                 return GlanceInfo(
                     type = GlanceType.BATTERY_ALERT,
-                    title = "Battery",
-                    text = "Watch Low ($watchBat%)",
+                    title = null,
+                    text = getString(R.string.battery_alert_watch_low, watchBat),
                     iconRes = R.drawable.rounded_battery_android_alert_24,
                     remainingMinutes = 0L,
                     glowMaxMinutes = 60L,
@@ -352,8 +361,8 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
             } else if (phoneLow) {
                 return GlanceInfo(
                     type = GlanceType.BATTERY_ALERT,
-                    title = "Battery",
-                    text = "Phone Low ($phoneBat%)",
+                    title = null,
+                    text = getString(R.string.battery_alert_phone_low, phoneBat),
                     iconRes = R.drawable.rounded_battery_android_alert_24,
                     remainingMinutes = 0L,
                     glowMaxMinutes = 60L,

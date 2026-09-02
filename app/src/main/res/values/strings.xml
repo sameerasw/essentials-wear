@@ -20,6 +20,9 @@
     <string name="time_day_complication_label">Time &amp; Day</string>
     <string name="battery_level">%1$d%%</string>
     <string name="battery_charging">Charging</string>
+    <string name="battery_alert_watch_phone_low">Watch &amp; phone battery low</string>
+    <string name="battery_alert_watch_low">Watch battery low %1$d%%</string>
+    <string name="battery_alert_phone_low">Phone battery low %1$d%%</string>
     <string name="your_android_title">Your Android</string>
     <string name="feature_settings">Settings</string>
     <string name="perm_dnd_access_title">Do Not Disturb Access</string>

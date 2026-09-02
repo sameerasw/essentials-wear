@@ -21,12 +21,96 @@ import com.sameerasw.essentials.utils.AdbDiscoveryHolder
 import com.sameerasw.essentials.utils.HapticUtil
 import com.sameerasw.essentials.utils.SoundUtil
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class CalendarDataListenerService : WearableListenerService() {
     companion object {
         private const val TAG = "CalendarDataListener"
         private const val SYNC_PATH = "/calendar_events"
         private const val DEVICE_INFO_PATH = "/device_info"
+
+        fun sendStatusUpdateToPhone(context: Context) {
+            val hasPermission = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val isAdbWifiEnabled = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+            
+            var ipAddress = ""
+            try {
+                val interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
+                for (networkInterface in interfaces) {
+                    val addresses = java.util.Collections.list(networkInterface.inetAddresses)
+                    for (address in addresses) {
+                        if (!address.isLoopbackAddress) {
+                            val hostAddress = address.hostAddress
+                            if (hostAddress != null && hostAddress.contains(".") && !hostAddress.contains(":")) {
+                                ipAddress = hostAddress
+                                break
+                            }
+                        }
+                    }
+                    if (ipAddress.isNotBlank()) break
+                }
+            } catch (_: Exception) { }
+            var adbPort = -1
+            if (isAdbWifiEnabled) {
+                try {
+                    val discovered = AdbDiscoveryHolder.getDiscoveredServices()
+                    val matching = discovered.firstOrNull { it.hostAddress == ipAddress } ?: discovered.firstOrNull()
+                    if (matching != null && matching.port > 0) {
+                        adbPort = matching.port
+                    } else {
+                        val port = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_port", -1)
+                        if (port > 0) {
+                            adbPort = port
+                        }
+                    }
+                } catch (_: Exception) { }
+            }
+
+            var wifiSsid = ""
+            try {
+                val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    val activeNetwork = cm?.activeNetwork
+                    val capabilities = cm?.getNetworkCapabilities(activeNetwork)
+                    val transportInfo = capabilities?.transportInfo
+                    if (transportInfo is android.net.wifi.WifiInfo) {
+                        val raw = transportInfo.ssid
+                        if (!raw.isNullOrBlank() && raw != "<unknown ssid>") {
+                            wifiSsid = raw.removePrefix("\"").removeSuffix("\"")
+                        }
+                    }
+                }
+                if (wifiSsid.isBlank()) {
+                    val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+                    val wifiInfo = wifiManager?.connectionInfo
+                    val rawSsid = wifiInfo?.ssid
+                    if (!rawSsid.isNullOrBlank() && rawSsid != "<unknown ssid>") {
+                        wifiSsid = rawSsid.removePrefix("\"").removeSuffix("\"")
+                    }
+                }
+            } catch (_: Exception) { }
+
+            val jsonObj = org.json.JSONObject().apply {
+                put("adb_wifi_enabled", isAdbWifiEnabled)
+                put("write_secure_settings_granted", hasPermission)
+                put("version_code", com.sameerasw.essentials.BuildConfig.VERSION_CODE)
+                put("ip_address", ipAddress)
+                put("adb_port", adbPort)
+                put("wifi_ssid", wifiSsid)
+            }
+            val data = jsonObj.toString().toByteArray(Charsets.UTF_8)
+            
+            val nodeClient = com.google.android.gms.wearable.Wearable.getNodeClient(context)
+            nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+                val messageClient = com.google.android.gms.wearable.Wearable.getMessageClient(context)
+                for (node in nodes) {
+                    messageClient.sendMessage(node.id, "/watch_status_update", data)
+                }
+            }
+        }
     }
 
     override fun onCreate() {
@@ -361,7 +445,13 @@ class CalendarDataListenerService : WearableListenerService() {
             }
             sendStatusUpdateToPhone(this)
         } else if (messageEvent.path == "/request_watch_status") {
+            // Restart mDNS discovery to ensure fresh ADB ports and send status, similar to AirSync
+            AdbDiscoveryHolder.restartDiscovery(this)
             sendStatusUpdateToPhone(this)
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(2000)
+                sendStatusUpdateToPhone(this@CalendarDataListenerService)
+            }
         } else if (messageEvent.path == "/set_notification_sound") {
             val soundName = String(messageEvent.data ?: byteArrayOf())
             Log.d(TAG, "Received set notification sound message: $soundName")
@@ -565,85 +655,7 @@ class CalendarDataListenerService : WearableListenerService() {
         }
     }
 
-    private fun sendStatusUpdateToPhone(context: Context) {
-        val hasPermission = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        val isAdbWifiEnabled = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
-        
-        var ipAddress = ""
-        try {
-            val interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
-            for (networkInterface in interfaces) {
-                val addresses = java.util.Collections.list(networkInterface.inetAddresses)
-                for (address in addresses) {
-                    if (!address.isLoopbackAddress) {
-                        val hostAddress = address.hostAddress
-                        if (hostAddress != null && hostAddress.contains(".") && !hostAddress.contains(":")) {
-                            ipAddress = hostAddress
-                            break
-                        }
-                    }
-                }
-                if (ipAddress.isNotBlank()) break
-            }
-        } catch (_: Exception) { }
-        var adbPort = -1
-        if (isAdbWifiEnabled) {
-            try {
-                val discovered = AdbDiscoveryHolder.getDiscoveredServices()
-                val matching = discovered.firstOrNull { it.hostAddress == ipAddress } ?: discovered.firstOrNull()
-                if (matching != null && matching.port > 0) {
-                    adbPort = matching.port
-                } else {
-                    val port = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_port", -1)
-                    if (port > 0) {
-                        adbPort = port
-                    }
-                }
-            } catch (_: Exception) { }
-        }
 
-        var wifiSsid = ""
-        try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                val activeNetwork = cm?.activeNetwork
-                val capabilities = cm?.getNetworkCapabilities(activeNetwork)
-                val transportInfo = capabilities?.transportInfo
-                if (transportInfo is android.net.wifi.WifiInfo) {
-                    val raw = transportInfo.ssid
-                    if (!raw.isNullOrBlank() && raw != "<unknown ssid>") {
-                        wifiSsid = raw.removePrefix("\"").removeSuffix("\"")
-                    }
-                }
-            }
-            if (wifiSsid.isBlank()) {
-                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
-                val wifiInfo = wifiManager?.connectionInfo
-                val rawSsid = wifiInfo?.ssid
-                if (!rawSsid.isNullOrBlank() && rawSsid != "<unknown ssid>") {
-                    wifiSsid = rawSsid.removePrefix("\"").removeSuffix("\"")
-                }
-            }
-        } catch (_: Exception) { }
-
-        val jsonObj = org.json.JSONObject().apply {
-            put("adb_wifi_enabled", isAdbWifiEnabled)
-            put("write_secure_settings_granted", hasPermission)
-            put("version_code", com.sameerasw.essentials.BuildConfig.VERSION_CODE)
-            put("ip_address", ipAddress)
-            put("adb_port", adbPort)
-            put("wifi_ssid", wifiSsid)
-        }
-        val data = jsonObj.toString().toByteArray(Charsets.UTF_8)
-        
-        val nodeClient = com.google.android.gms.wearable.Wearable.getNodeClient(context)
-        nodeClient.connectedNodes.addOnSuccessListener { nodes ->
-            val messageClient = com.google.android.gms.wearable.Wearable.getMessageClient(context)
-            for (node in nodes) {
-                messageClient.sendMessage(node.id, "/watch_status_update", data)
-            }
-        }
-    }
 
     private fun isDefaultLauncher(): Boolean {
         val intent = Intent(Intent.ACTION_MAIN)

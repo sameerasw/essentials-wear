@@ -3,6 +3,7 @@ package com.sameerasw.essentials.presentation.yourandroid
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import com.sameerasw.essentials.services.CalendarDataListenerService
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.basicMarquee
@@ -97,13 +98,7 @@ fun YourAndroidScreen() {
     }
 
     LaunchedEffect(Unit) {
-        val hasPermission = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        val isAdbWifiEnabled = android.provider.Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
-        val data = byteArrayOf(
-            if (isAdbWifiEnabled) 1 else 0,
-            if (hasPermission) 1 else 0
-        )
-        sendMessage("/watch_status_update", data)
+        CalendarDataListenerService.sendStatusUpdateToPhone(context)
     }
 
     // Observe preference changes

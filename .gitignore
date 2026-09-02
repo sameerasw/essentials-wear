@@ -32,3 +32,4 @@ replay_pid*
 local.properties
 
 Build/
+*build.gradle.kts.bak

@@ -124,8 +124,11 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
         val monochromaticImage = MonochromaticImage.Builder(icon).build()
         val contentDesc = PlainComplicationText.Builder("${info.title} ${info.text}").build()
 
+        val prefs = getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
+        val showGlow = prefs.getBoolean("watchface_show_glow", true)
+
         // Calculate Glow proximity factor (0.0 to 1.0)
-        val proximityFactor = if (info.remainingMinutes != null && info.remainingMinutes <= info.glowMaxMinutes) {
+        val proximityFactor = if (showGlow && info.remainingMinutes != null && info.remainingMinutes <= info.glowMaxMinutes) {
             val mins = info.remainingMinutes.coerceAtLeast(0L)
             val peak = info.glowPeakMinutes
             val maxM = info.glowMaxMinutes
@@ -387,10 +390,12 @@ class GlanceComplicationService : SuspendingComplicationDataSourceService() {
                     else -> "ETA"
                 }
 
+                val travelText = if (travelName.isNotBlank()) "$etaPrefix till $travelName" else etaPrefix
+
                 return GlanceInfo(
                     type = GlanceType.TRAVEL,
                     title = if (travelName.isNotBlank()) travelName else "Travel",
-                    text = etaPrefix,
+                    text = travelText,
                     iconRes = travelIconRes,
                     remainingMinutes = travelMinutes ?: 30L,
                     glowMaxMinutes = 60L,

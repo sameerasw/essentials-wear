@@ -1056,7 +1056,7 @@ class EssentialsCanvasRenderer(
             }
         }
 
-        // 1. Check for upcoming calendar event starting within 30 minutes
+        // 1. Calendar Events (support overlapping events stack & glow up to 30 mins of ongoing)
         var earlyUpcomingMeeting: TopScheduleInfo? = null
         if (showEvents) {
             try {
@@ -1068,28 +1068,22 @@ class EssentialsCanvasRenderer(
                 val endOfToday = cal.timeInMillis
 
                 val eventList = com.sameerasw.essentials.tile.MainTileService.getSyncedEvents(context)
-                var earliestEventTitle: String? = null
-                var earliestBegin = Long.MAX_VALUE
+                val todayEvents = eventList.filter { !it.allDay && it.end > now && it.begin <= endOfToday }
+                val ongoingEvents = todayEvents.filter { now in it.begin..it.end }.sortedByDescending { it.begin }
+                val upcomingEvents = todayEvents.filter { it.begin > now }.sortedBy { it.begin }
 
-                for (event in eventList) {
-                    val begin = event.begin
-                    val end = event.end
-                    val title = event.title ?: ""
-                    val allDay = event.allDay
-
-                    if (!allDay && begin > now && begin <= endOfToday && begin < earliestBegin) {
-                        earliestBegin = begin
-                        earliestEventTitle = title
-                    } else if (!allDay && now in begin..end && begin < earliestBegin) {
-                        earliestBegin = begin
-                        earliestEventTitle = title
-                    }
+                val nextUpcoming = upcomingEvents.firstOrNull()
+                val selectedEvent = if (nextUpcoming != null && (nextUpcoming.begin - now) <= 15 * 60 * 1000L) {
+                    nextUpcoming
+                } else {
+                    ongoingEvents.firstOrNull() ?: nextUpcoming
                 }
 
-                if (earliestEventTitle != null) {
-                    val diffMs = earliestBegin - now
+                if (selectedEvent != null) {
+                    val isOngoing = now in selectedEvent.begin..selectedEvent.end
+                    val diffMs = selectedEvent.begin - now
                     val diffMinutes = if (diffMs <= 0) 0L else (diffMs / 60000L).coerceAtLeast(1L)
-                    val timeStr = if (diffMs <= 0) {
+                    val timeStr = if (isOngoing) {
                         "Now"
                     } else {
                         if (diffMinutes < 60) {
@@ -1100,20 +1094,33 @@ class EssentialsCanvasRenderer(
                             if (remainingMin > 0) "in ${hours}h ${remainingMin}m" else "in ${hours}h"
                         }
                     }
-                    val cleanTitle = if (earliestEventTitle.length > 20) earliestEventTitle.take(19) + "…" else earliestEventTitle
+                    val rawTitle = selectedEvent.title ?: ""
+                    val cleanTitle = if (rawTitle.length > 20) rawTitle.take(19) + "…" else rawTitle
+
+                    val (remainingMinsForGlow, glowMax, glowPeak) = if (isOngoing) {
+                        val elapsedMinutes = ((now - selectedEvent.begin) / 60000L).coerceAtLeast(0L)
+                        if (elapsedMinutes < 30L) {
+                            Triple(0L, 30L, 0L)
+                        } else {
+                            Triple(null, 30L, 0L)
+                        }
+                    } else {
+                        Triple(diffMinutes, 120L, 15L)
+                    }
+
                     earlyUpcomingMeeting = TopScheduleInfo(
                         GlanceType.EVENT,
                         "$cleanTitle $timeStr",
                         calendarIconDrawable,
-                        diffMinutes,
-                        glowMaxMinutes = 120L,
-                        glowPeakMinutes = 15L
+                        remainingMinutes = remainingMinsForGlow,
+                        glowMaxMinutes = glowMax,
+                        glowPeakMinutes = glowPeak
                     )
                 }
             } catch (_: Exception) { }
         }
 
-        if (earlyUpcomingMeeting != null && earlyUpcomingMeeting.remainingMinutes != null && earlyUpcomingMeeting.remainingMinutes in 1..30) {
+        if (earlyUpcomingMeeting != null && (earlyUpcomingMeeting.text.endsWith("Now") || (earlyUpcomingMeeting.remainingMinutes != null && earlyUpcomingMeeting.remainingMinutes in 1..30))) {
             return earlyUpcomingMeeting
         }
 

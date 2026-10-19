@@ -14,6 +14,7 @@ import com.sameerasw.essentials.presentation.schedule.ScheduleScreen
 import com.sameerasw.essentials.presentation.theme.EssentialsTheme
 import com.sameerasw.essentials.presentation.yourandroid.YourAndroidScreen
 import com.sameerasw.essentials.presentation.settings.SettingsScreen
+import com.sameerasw.essentials.utils.AdbDiscoveryHolder
 
 class MainActivity : ComponentActivity() {
 
@@ -21,21 +22,48 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_NAVIGATE_TO = "navigate_to"
         const val NAV_SCHEDULE = "schedule"
         const val NAV_YOUR_ANDROID = "your_android"
+        private const val KEY_LOCAL_NETWORK_REQUESTED = "local_network_requested"
+        private const val LOCAL_NETWORK_REQUEST_CODE = 137
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setTheme(android.R.style.Theme_DeviceDefault)
-        try {
-            com.sameerasw.essentials.utils.AdbDiscoveryHolder.initialize(this)
-        } catch (_: Exception) { }
+        startAdbDiscovery()
 
         val navigateTo = intent?.getStringExtra(EXTRA_NAVIGATE_TO)
 
         setContent {
             WearApp(initialScreen = navigateTo)
         }
+    }
+
+    private fun startAdbDiscovery() {
+        try {
+            if (!AdbDiscoveryHolder.isAdbWifiEnabled(this)) return
+            if (AdbDiscoveryHolder.hasLocalNetworkPermission(this)) {
+                AdbDiscoveryHolder.initialize(this)
+                return
+            }
+            val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
+            if (!prefs.getBoolean(KEY_LOCAL_NETWORK_REQUESTED, false)) {
+                prefs.edit().putBoolean(KEY_LOCAL_NETWORK_REQUESTED, true).apply()
+                requestPermissions(
+                    arrayOf(AdbDiscoveryHolder.LOCAL_NETWORK_PERMISSION),
+                    LOCAL_NETWORK_REQUEST_CODE
+                )
+            }
+        } catch (_: Exception) { }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == LOCAL_NETWORK_REQUEST_CODE) startAdbDiscovery()
     }
 }
 

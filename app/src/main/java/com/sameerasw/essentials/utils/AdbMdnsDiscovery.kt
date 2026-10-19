@@ -2,25 +2,41 @@
 package com.sameerasw.essentials.utils
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 
 object AdbDiscoveryHolder {
+    const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+
     private var discovery: AdbMdnsDiscovery? = null
 
+    fun hasLocalNetworkPermission(context: Context): Boolean =
+        Build.VERSION.SDK_INT < 37 ||
+            context.checkSelfPermission(LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    fun isAdbWifiEnabled(context: Context): Boolean =
+        Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+
     fun initialize(context: Context) {
-        if (discovery == null) {
-            Log.d("AdbDiscoveryHolder", "Initializing ADB discovery")
-            discovery = AdbMdnsDiscovery(context.applicationContext)
-            discovery?.startDiscovery()
-        }
+        if (discovery != null) return
+        if (!isAdbWifiEnabled(context) || !hasLocalNetworkPermission(context)) return
+        Log.d("AdbDiscoveryHolder", "Initializing ADB discovery")
+        discovery = AdbMdnsDiscovery(context.applicationContext)
+        discovery?.startDiscovery()
+    }
+
+    fun stop() {
+        discovery?.stopDiscovery()
+        discovery = null
     }
 
     fun restartDiscovery(context: Context) {
         Log.d("AdbDiscoveryHolder", "Restarting ADB discovery")
-        discovery?.stopDiscovery()
-        discovery = null
+        stop()
         initialize(context)
     }
 
@@ -97,7 +113,9 @@ class AdbMdnsDiscovery(context: Context) {
             }
 
             override fun onStartDiscoveryFailed(regType: String, errorCode: Int) {
-                nsdManager.stopServiceDiscovery(this)
+                Log.e(TAG, "Discovery start failed: Error code $errorCode")
+                isDiscovering = false
+                discoveryListener = null
             }
 
             override fun onStopDiscoveryFailed(regType: String, errorCode: Int) {

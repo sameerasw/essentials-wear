@@ -67,6 +67,8 @@ class CalendarDataListenerService : WearableListenerService() {
                         }
                     }
                 } catch (_: Exception) { }
+            } else {
+                AdbDiscoveryHolder.stop()
             }
 
             var wifiSsid = ""
@@ -439,6 +441,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 val newValue = if (isAdbWifiEnabled) 0 else 1
                 try {
                     android.provider.Settings.Global.putInt(contentResolver, "adb_wifi_enabled", newValue)
+                    if (newValue == 1) AdbDiscoveryHolder.initialize(this) else AdbDiscoveryHolder.stop()
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to write adb_wifi_enabled setting", e)
                 }

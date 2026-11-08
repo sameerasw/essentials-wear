@@ -1,6 +1,9 @@
 package com.sameerasw.essentials.presentation.launcher
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -21,7 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -79,7 +84,21 @@ fun AppLauncherScreen() {
     val themeColor = remember { ThemeUtil.getThemeColor(context) }
     val tonedColor = themeColor?.let { Color(ThemeUtil.getTonedColor(it)) } ?: Color(0xFF1E1E1E)
     
-    val apps = remember {
+    // Bumped on install/uninstall so the list below is re-queried
+    val refresh = remember { mutableIntStateOf(0) }
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) { refresh.intValue++ }
+        }
+        context.registerReceiver(receiver, IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        })
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    val apps = remember(refresh.intValue) {
         val intent = Intent(Intent.ACTION_MAIN, null).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
         }

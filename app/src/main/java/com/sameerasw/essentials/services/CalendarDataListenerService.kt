@@ -222,6 +222,7 @@ class CalendarDataListenerService : WearableListenerService() {
                 val watchfaceClockDualTone = dataMap.getBoolean("watchface_clock_dual_tone", false)
                 val watchfaceClockOutline = dataMap.getBoolean("watchface_clock_outline", false)
                 val watchfaceClockOutlineThickness = dataMap.getInt("watchface_clock_outline_thickness", 2)
+                val watchfaceClock24h = dataMap.getBoolean("watchface_clock_24h", false)
 
                 saveDeviceInfo(
                     batteryLevel, 
@@ -262,7 +263,8 @@ class CalendarDataListenerService : WearableListenerService() {
                     watchfaceClockFontSize,
                     watchfaceClockDualTone,
                     watchfaceClockOutline,
-                    watchfaceClockOutlineThickness
+                    watchfaceClockOutlineThickness,
+                    watchfaceClock24h
                 )
                 Log.d(TAG, "Saved device info: Level=$batteryLevel, Charging=$isCharging, TravelActive=$travelActive, TravelName=$travelName")
 
@@ -342,7 +344,8 @@ class CalendarDataListenerService : WearableListenerService() {
         watchfaceClockFontSize: Int = 100,
         watchfaceClockDualTone: Boolean = false,
         watchfaceClockOutline: Boolean = false,
-        watchfaceClockOutlineThickness: Int = 2
+        watchfaceClockOutlineThickness: Int = 2,
+        watchfaceClock24h: Boolean = false
     ) {
         val prefs = getSharedPreferences("schedule_prefs", MODE_PRIVATE)
         prefs.edit()
@@ -385,6 +388,7 @@ class CalendarDataListenerService : WearableListenerService() {
             .putBoolean("watchface_clock_dual_tone", watchfaceClockDualTone)
             .putBoolean("watchface_clock_outline", watchfaceClockOutline)
             .putInt("watchface_clock_outline_thickness", watchfaceClockOutlineThickness)
+            .putBoolean("watchface_clock_24h", watchfaceClock24h)
             .putLong("phone_battery_timestamp", System.currentTimeMillis())
             .apply()
     }

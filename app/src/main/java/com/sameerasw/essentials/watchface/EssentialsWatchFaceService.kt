@@ -660,8 +660,9 @@ class EssentialsCanvasRenderer(
         val now = System.currentTimeMillis()
         calendar.timeInMillis = now
 
+        val clock24h = sharedPrefs?.getBoolean("watchface_clock_24h", false) ?: false
         val rawHour = calendar.get(Calendar.HOUR)
-        val hourInt = if (rawHour == 0) 12 else rawHour
+        val hourInt = if (clock24h) calendar.get(Calendar.HOUR_OF_DAY) else if (rawHour == 0) 12 else rawHour
         val minuteInt = calendar.get(Calendar.MINUTE)
 
         val hourText = String.format(Locale.getDefault(), "%02d", hourInt)

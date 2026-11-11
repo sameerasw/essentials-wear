@@ -13,8 +13,8 @@ android {
         applicationId = "com.sameerasw.essentials"
         minSdk = 34
         targetSdk = 36
-        versionCode = 7
-        versionName = "7.0"
+        versionCode = 8
+        versionName = "8.0"
 
     }
 

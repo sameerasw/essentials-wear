@@ -59,7 +59,6 @@ class PhoneBatteryComplicationService : SuspendingComplicationDataSourceService(
                     contentDescription = contentDescription
                 )
                 .setText(PlainComplicationText.Builder(textValue).build())
-                .setTitle(PlainComplicationText.Builder(getString(R.string.phone_battery_short)).build())
                 .setMonochromaticImage(monochromaticImage)
                 .setTapAction(tapAction)
                 .build()
@@ -71,7 +70,6 @@ class PhoneBatteryComplicationService : SuspendingComplicationDataSourceService(
                     contentDescription = contentDescription
                 )
                 .setText(PlainComplicationText.Builder(textValue).build())
-                .setTitle(PlainComplicationText.Builder(getString(R.string.phone_battery_short)).build())
                 .setMonochromaticImage(monochromaticImage)
                 .setTapAction(tapAction)
                 .build()
@@ -81,7 +79,6 @@ class PhoneBatteryComplicationService : SuspendingComplicationDataSourceService(
                     text = PlainComplicationText.Builder(textValue).build(),
                     contentDescription = contentDescription
                 )
-                .setTitle(PlainComplicationText.Builder(getString(R.string.phone_battery_short)).build())
                 .setMonochromaticImage(monochromaticImage)
                 .setTapAction(tapAction)
                 .build()

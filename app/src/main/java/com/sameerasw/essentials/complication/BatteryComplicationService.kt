@@ -30,7 +30,7 @@ class BatteryComplicationService : SuspendingComplicationDataSourceService() {
 
     private fun createComplicationData(watchLevel: Int, phoneLevel: Int, type: ComplicationType): ComplicationData {
         val phoneLevelSafe = if (phoneLevel < 0) 0 else phoneLevel
-        val text = "W:$watchLevel% P:$phoneLevelSafe%"
+        val text = "$watchLevel% $phoneLevelSafe%"
         val contentDescription = PlainComplicationText.Builder("Watch $watchLevel%, Phone $phoneLevelSafe%").build()
         
         val tapAction = getTapAction()
@@ -43,7 +43,7 @@ class BatteryComplicationService : SuspendingComplicationDataSourceService() {
                     text = PlainComplicationText.Builder("$watchLevel%").build(),
                     contentDescription = contentDescription
                 )
-                .setTitle(PlainComplicationText.Builder("◙$phoneLevelSafe%").build())
+                .setTitle(PlainComplicationText.Builder("$phoneLevelSafe%").build())
                 .setMonochromaticImage(monochromaticImage)
                 .setTapAction(tapAction)
                 .build()
@@ -56,7 +56,7 @@ class BatteryComplicationService : SuspendingComplicationDataSourceService() {
                     contentDescription = contentDescription
                 )
                 .setText(PlainComplicationText.Builder("$watchLevel%").build())
-                .setTitle(PlainComplicationText.Builder("◙$phoneLevelSafe%").build())
+                .setTitle(PlainComplicationText.Builder("$phoneLevelSafe%").build())
                 .setMonochromaticImage(monochromaticImage)
                 .setTapAction(tapAction)
                 .build()

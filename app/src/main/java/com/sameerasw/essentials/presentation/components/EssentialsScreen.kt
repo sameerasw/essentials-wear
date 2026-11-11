@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.rotary.RotaryScrollableBehavior
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -16,6 +18,7 @@ fun EssentialsScreen(
     modifier: Modifier = Modifier,
     state: ScalingLazyListState = rememberScalingLazyListState(),
     userScrollEnabled: Boolean = true,
+    rotaryScrollableBehavior: RotaryScrollableBehavior? = RotaryScrollableDefaults.behavior(state),
     autoCentering: AutoCenteringParams? = AutoCenteringParams(itemIndex = 0),
     content: ScalingLazyListScope.() -> Unit
 ) {
@@ -27,6 +30,7 @@ fun EssentialsScreen(
             state = state,
             autoCentering = autoCentering,
             userScrollEnabled = userScrollEnabled,
+            rotaryScrollableBehavior = rotaryScrollableBehavior,
             content = content
         )
     }

@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
+import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,10 +41,8 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -58,6 +60,8 @@ fun YourAndroidScreen() {
     val view = LocalView.current
     val prefs = context.getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE)
     val focusRequester = remember { FocusRequester() }
+    val listState = rememberScalingLazyListState()
+    val windowInfo = LocalWindowInfo.current
     
     // Reactive state for battery info
     val batteryLevelState = remember { mutableStateOf(prefs.getInt("phone_battery_level", -1)) }
@@ -163,8 +167,8 @@ fun YourAndroidScreen() {
     }
 
     // Request focus for rotary events
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+    LaunchedEffect(windowInfo.isWindowFocused) {
+        if (windowInfo.isWindowFocused) focusRequester.requestFocus()
     }
 
     val activeKeys = remember(watchControlsLayoutState.value) {
@@ -183,7 +187,9 @@ fun YourAndroidScreen() {
     }
 
     EssentialsScreen(
+        state = listState,
         userScrollEnabled = !flashlightOnState.value,
+        rotaryScrollableBehavior = null,
         modifier = Modifier
             .onPreRotaryScrollEvent {
                 if (flashlightOnState.value && flashlightIntensitySupportedState.value) {
@@ -201,8 +207,7 @@ fun YourAndroidScreen() {
                     false
                 }
             }
-            .focusRequester(focusRequester)
-            .focusable()
+            .rotaryScrollable(RotaryScrollableDefaults.behavior(listState), focusRequester)
     ) {
         val isDeviceFound = !deviceNameState.value.isNullOrBlank()
 
